@@ -47,6 +47,7 @@ print("MEDIAPIPE: ", mp.__version__)
 
 
 def draw_landmarks_on_image(rgb_image, detection_result):
+
     pose_landmarks_list = detection_result.pose_landmarks
     annotated_image = np.copy(rgb_image)
 
@@ -67,34 +68,61 @@ def draw_landmarks_on_image(rgb_image, detection_result):
     return annotated_image
 
 
+def average_distance(keypoints1, keypoints2):
+    averege = 0
+    for point1, point2 in zip(keypoints1, keypoints2):
+        dist = np.linalg.norm(point1[0:2]-point2[0:2])
+        if (len(point1) > 2 and len(point2) > 2):
+            dist *= point1[-1]*point2[-1]
+        averege += dist
+    return averege
+
+
 inputFilePath = "processedVideos.csv"
 
+# options
+save_video = False
+save_file = False
+debug_yolo = False
+debug_mediaPipe = True
+print_all = False
+print_resume = True
+download_video = False
+save_file = False
+display_frame = False
+display_mediapipe = False
+display_yolo = False
 
 videosTable = pd.read_csv(inputFilePath, sep=';')
-print("Lendo: ", inputFilePath)
-print(inputFilePath)
-
-print("Table: ", len(videosTable))
-
 filtered = videosTable["status"] == "Processing"
-print("Filtered: ", len(filtered))
+
+if print_all:
+    print("Lendo: ", inputFilePath)
+    print(inputFilePath)
+    print("Table: ", len(videosTable))
+    print("Filtered: ", len(filtered))
+
+
 indexesProcessing = videosTable.index[filtered]
 if (len(indexesProcessing) > 0):
     print("PROCESSING THE INDEX VIDEO: ", indexesProcessing.tolist()[0])
 else:
     filtered = videosTable["status"] == "Ready"
-    print("Filtered: ", len(filtered))
     indexesToProcess = videosTable.index[filtered]
-    print("indexesToProcess: ", len(indexesToProcess))
+    if print_all:
+        print("Filtered: ", len(filtered))
+        print("indexesToProcess: ", len(indexesToProcess))
     if (len(indexesToProcess) < 1):
         print("ALL VIDEOS PROCESSED!")
     else:
-        print("Index to update: ", indexesToProcess.tolist()[0])
+
         videosTable.at[indexesToProcess.tolist()[0], 'status'] = 'Processing'
-        print("Updated Table: ", videosTable)
         # videosTable.to_csv(inputFilePath, index=False, sep=';')
         selectedVideo = videosTable.loc[indexesToProcess.tolist()[0]]
-        print("Selected Video: ", selectedVideo)
+        if print_all:
+            print("Index to update: ", indexesToProcess.tolist()[0])
+            print("Updated Table: ", videosTable)
+            print("Selected Video: ", selectedVideo)
         options = {
             # 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
             # This will select the specific resolution typed here
@@ -103,9 +131,11 @@ else:
             # "%(id)s/%(id)s-%(title)s.%(ext)s"
             "outtmpl": "videos/%(id)s/%(id)s.%(ext)s"
         }
-        # with YoutubeDL(options) as ydl:
-        #    ydl.download([selectedVideo['url']])
-        #   print('Download Concluído: ', selectedVideo['id'])
+        if download_video:
+            with YoutubeDL(options) as ydl:
+                ydl.download([selectedVideo['url']])
+            if print_all:
+                print('Download Concluído: ', selectedVideo['id'])
         # see OUTPUT TEMPLATE in https://github.com/ytdl-org/youtube-dl
 
         # https://developers.google.com/mediapipe/solutions/vision/pose_landmarker/python
@@ -125,17 +155,21 @@ else:
             running_mode=VisionRunningMode.VIDEO)
 
         # Load a model
-        model = YOLO('yolov8n-pose.pt')  # load an official model
+        model_file = 'yolov8n-pose.pt'
+        model = YOLO(model_file)  # load an official model
         # model = YOLO('path/to/best.pt')  # load a custom model
 
         # Use OpenCV’s VideoCapture to load the input video.
         cap = cv2.VideoCapture("videos/" + selectedVideo['id']
                                + "/" + selectedVideo['id']
                                + ".mp4")
+
         outputFilePath = "/Users/jaderxnet/Documents/GitHub/GERAD/videos/" + \
             selectedVideo['id'] + "/" + selectedVideo['id']+".txt"
-        file1 = open(outputFilePath, "w")
-        file1.write("Inicio " + outputFilePath)
+        file1 = None
+        if save_file:
+            file1 = open(outputFilePath, "w")
+
         if (cap.isOpened() == False):
             print("Error opening video stream or file")
 
@@ -147,35 +181,79 @@ else:
         # frames have the dictionary with frame id
         dictionary[selectedVideo["id"]]["frames"] = {}
 
-        print(dictionary)
-        print_count = 0
-        frames_count = 1
+        # record video
+        fourcc = cv2.VideoWriter_fourcc(*'MP4V')
+        out = None
+        if save_video:
+            out = cv2.VideoWriter('videos/'+selectedVideo["id"]+'/Out2' + selectedVideo["id"]+'.mp4', fourcc, 20.0,
+                                  (selectedVideo["width"], selectedVideo["height"]))
 
+        if print_all:
+            print(dictionary)
+        print_count = 0
+        frames_count = 0
         # Read until video is completed
+        frame_information = ""
         while (cap.isOpened()):
             # Capture frame-by-frame
+
             ret, frame = cap.read()
 
             if ret == True:
-
+                frames_count += 1
+                # frames have the dictionary with frame id
+                dictionary[selectedVideo["id"]
+                           ]["frames"][frames_count] = {}
                 # Display the resulting frame
-                # cv2.imshow('Video Frame', frame)
+                if display_frame:
+                    cv2.imshow('Video Frame', frame)
                 # Predict with the model
+
                 results = model(frame)  # predict on an image
-                print("Quant restults: ", len(results))
-                # if (print_count < 1 and len(results[0].keypoints) > 0):
-                # print("Yolo Results: ",  results)
-                # print("Keypoints Results: ",  results[0].keypoints)
+                quantidade_poses_yolo = len(results[0].keypoints)
+                if print_all or debug_yolo:
+                    print("Quant Poses YOLO: ", quantidade_poses_yolo)
+                    print("Quant restults: ", len(results))
+                dictionary[selectedVideo["id"]
+                           ]["frames"][frames_count]["YOLO"] = {}
+                dictionary[selectedVideo["id"]
+                           ]["frames"][frames_count]["YOLO"]["neural_network_file"] = model_file
+                dictionary[selectedVideo["id"]
+                           ]["frames"][frames_count]["YOLO"]["poses_count"] = quantidade_poses_yolo
+
+                if quantidade_poses_yolo > 0:
+                    results_json = results[0].tojson(normalize=True)
+                    results_json = json.loads(results_json)
+                    if print_all or debug_yolo:
+                        print("TO JSON: ", results_json)
+                        print("X: ", results_json[0]["keypoints"]["x"])
+                    dictionary[selectedVideo["id"]
+                               ]["frames"][frames_count]["YOLO"]["keypoints"] = []
+                    list_poses_yolo = []
+                    for result in results_json:
+                        pose_yolo = np.stack((np.array((result["keypoints"]["x"])), np.array((
+                            result["keypoints"]["y"])), np.array((result["keypoints"]["visible"]))), axis=1)
+                        if print_all or debug_yolo:
+                            print("List Poses: ", pose_yolo)
+                        list_poses_yolo.append(pose_yolo)
+                    dictionary[selectedVideo["id"]
+                               ]["frames"][frames_count]["YOLO"]["keypoints"] = list_poses_yolo
+
+                if print_all or debug_yolo:
+                    print("Yolo Results: ",  results)
+
+                    print("Keypoints Results: ",
+                          results[0].tojson(normalize=True))
+
                 res_plotted = results[0].plot()
-                # cv2.imshow("result", res_plotted)
-                # print("YOLO Results:", results)
+                if display_yolo:
+                    cv2.imshow("result", res_plotted)
 
                 # Convert the frame received from OpenCV to a MediaPipe’s Image object.
                 mp_image = mp.Image(
                     image_format=mp.ImageFormat.SRGB, data=frame)
-                mp_image_yolo = mp.Image(
-                    image_format=mp.ImageFormat.SRGB, data=res_plotted)
 
+                # MediaPipe
                 with PoseLandmarker.create_from_options(options) as landmarker:
                     # The landmarker is initialized. Use it here.
                     # ...
@@ -184,36 +262,94 @@ else:
                     # The pose landmarker must be created with the video mode.
                     pose_landmarker_result = landmarker.detect_for_video(
                         mp_image, frame_timestamp_ms)
-                    quantidade_poses = len(
+                    quantidade_poses_mediapipe = len(
                         pose_landmarker_result.pose_landmarks)
-                    # frames have the dictionary with frame id
-                    dictionary[selectedVideo["id"]
-                               ]["frames"][frames_count] = {}
+                    if print_all or debug_mediaPipe:
+                        print("Quant Poses Mediapipe",
+                              quantidade_poses_mediapipe)
                     # mediapipe have the dictionary  neural networks detections
                     dictionary[selectedVideo["id"]
                                ]["frames"][frames_count]["mediapipe"] = {}
                     dictionary[selectedVideo["id"]
+                               ]["frames"][frames_count]["mediapipe"]["poses_count"] = quantidade_poses_mediapipe
+                    dictionary[selectedVideo["id"]
                                ]["frames"][frames_count]["mediapipe"]["neural_network_file"] = model_path_Heavy
                     # landmarks have the landmarks
-                    dictionary[selectedVideo["id"]
-                               ]["frames"][frames_count]["mediapipe"]["landmarks"] = pose_landmarker_result.pose_landmarks
-                    frames_count += 1
-                    print("\033[K", f'{frames_count:06}', end="\r")
-                    if (quantidade_poses > 0 and print_count < 3):
-                        # print(dictionary)
-                        print_count += 1
-                        print(quantidade_poses)
 
-                    if quantidade_poses > 0:
-                        # print("Pose:", pose_landmarker_result)
-                        annotated_image = draw_landmarks_on_image(
-                            mp_image_yolo.numpy_view(), pose_landmarker_result)
-                        annotated_image_rgb = cv2.cvtColor(
-                            annotated_image, cv2.COLOR_RGB2BGR)
-                        # print("Image: ", annotated_image)
+                    if print_all or debug_mediaPipe:
+                        print(pose_landmarker_result)
+                        print("Quant Poses:", quantidade_poses_mediapipe)
+
+                    if quantidade_poses_mediapipe > 0:
+                        dictionary[selectedVideo["id"]
+                                   ]["frames"][frames_count]["mediapipe"]["keypoints"] = []
+                        list_poses = []
+                        for normalize_landmark in pose_landmarker_result.pose_landmarks[0]:
+                            list_poses.append([normalize_landmark.x,
+                                               normalize_landmark.y, normalize_landmark.visibility])
+                        dictionary[selectedVideo["id"]]["frames"][frames_count
+                                                                  ]["mediapipe"]["keypoints"].append(np.array((list_poses)))
+                        if print_all or debug_mediaPipe:
+                            print("Media PipePoses:", dictionary[selectedVideo["id"]]["frames"][frames_count
+                                                                                                ]["mediapipe"]["keypoints"])
+                    annotated_image = draw_landmarks_on_image(
+                        res_plotted, pose_landmarker_result)
+                    annotated_image_rgb = cv2.cvtColor(
+                        annotated_image, cv2.COLOR_RGB2BGR)
+
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    bottomLeftCornerOfText = (10, 30)
+                    fontScale = 0.8
+                    fontColor = (255, 255, 255)
+                    thickness = 1
+                    lineType = 2
+
+                    cv2.putText(annotated_image_rgb, frame_information,
+                                bottomLeftCornerOfText,
+                                font,
+                                fontScale,
+                                fontColor,
+                                thickness,
+                                lineType)
+                    if print_all:
+                        print("Image: ", annotated_image)
+                    if display_mediapipe:
                         cv2.imshow("MediaPipe Fame", annotated_image_rgb)
-
+                    if save_video:
+                        out.write(annotated_image_rgb)
                 # Press Q on keyboard to  exit
+                # Compare distance
+
+                minor_distance = 100
+                minor_yolo_distance_index = -1
+                if (dictionary[selectedVideo["id"]
+                               ]["frames"][frames_count]["mediapipe"]["poses_count"] > 0
+                   and dictionary[selectedVideo["id"]
+                                  ]["frames"][frames_count]["YOLO"]["poses_count"] > 0):
+                    index = 0
+
+                    # print("MEDIAPIPE:", dictionary[selectedVideo["id"]]["frames"
+                    #                                                    ][frames_count]["mediapipe"]["keypoints"][0])
+                    for yolo_pose in dictionary[selectedVideo["id"]]["frames"][frames_count]["YOLO"]["keypoints"]:
+                        # print("YOLO:", yolo_pose)
+
+                        distance = average_distance(yolo_pose,
+                                                    dictionary[selectedVideo["id"]]["frames"
+                                                                                    ][frames_count]["mediapipe"]["keypoints"][0])
+                        if (minor_distance > distance):
+                            minor_distance = distance
+                            minor_yolo_distance_index = index
+                        index += 1
+                        # print("Index: ", index, "Media: ", distance)
+                frame_information = "| Frame" + f'{frames_count:06}'+"| Quant Poses YOLO: " + f'{quantidade_poses_yolo:02}'+"| Quant Poses Mediapipe" + \
+                    f'{quantidade_poses_mediapipe:02}'+"| Indice: " + f'{minor_yolo_distance_index:02}' + \
+                    "| Menor Distancia Euclidiana Média: " + \
+                    f'{minor_distance:03.15f}'
+                if print_resume:
+                    print(
+                        # "\033[K",
+                        frame_information, end="\r")
+
                 if cv2.waitKey(25) & 0xFF == ord('q'):
                     break
             # Break the loop
@@ -222,7 +358,9 @@ else:
 
         # When everything done, release the video capture object
         cap.release()
-        print(dictionary)
+        if save_video:
+            out.release()
+        # print(dictionary)
         dictionary[selectedVideo["id"]
                    ]["frames_count"] = frames_count-1
         # Closes all the frames
@@ -245,7 +383,6 @@ class NpEncoder(json.JSONEncoder):
         return super(NpEncoder, self).default(obj)
 
 
-if (file1 is not None):
+if save_file:
     file1.write(str(dictionary))
-
     file1.close()
