@@ -81,17 +81,15 @@ def average_distance(keypoints1, keypoints2):
 inputFilePath = "processedVideos.csv"
 
 # options
-save_video = False
-save_file = False
+save_video = True
+save_file = True
 debug_yolo = False
-debug_mediaPipe = True
+debug_mediaPipe = False
 print_all = False
 print_resume = True
 download_video = False
-save_file = False
 display_frame = False
-display_mediapipe = False
-display_yolo = False
+
 
 videosTable = pd.read_csv(inputFilePath, sep=';')
 filtered = videosTable["status"] == "Processing"
@@ -140,8 +138,8 @@ else:
 
         # https://developers.google.com/mediapipe/solutions/vision/pose_landmarker/python
         # https://developers.google.com/mediapipe/solutions/vision/pose_landmarker/index#models
-        model_path_lite = '/Users/jaderxnet/Documents/GitHub/GERAD/neuralNetorks/pose_landmarker_lite.task'
-        model_path_Heavy = '/Users/jaderxnet/Documents/GitHub/GERAD/neuralNetorks/pose_landmarker_heavy.task'
+        model_path_lite = '/Users/jaderxnet/Documents/GitHub/GERAD/neuralNetworks/mediapipe/pose_landmarker_lite.task'
+        model_path_Heavy = '/Users/jaderxnet/Documents/GitHub/GERAD/neuralNetworks/mediapipe/pose_landmarker_heavy.task'
 
         BaseOptions = mp.tasks.BaseOptions
         PoseLandmarker = mp.tasks.vision.PoseLandmarker
@@ -155,7 +153,7 @@ else:
             running_mode=VisionRunningMode.VIDEO)
 
         # Load a model
-        model_file = 'yolov8n-pose.pt'
+        model_file = 'neuralNetworks/YOLO/yolov8n-pose.pt'
         model = YOLO(model_file)  # load an official model
         # model = YOLO('path/to/best.pt')  # load a custom model
 
@@ -205,8 +203,8 @@ else:
                 dictionary[selectedVideo["id"]
                            ]["frames"][frames_count] = {}
                 # Display the resulting frame
-                if display_frame:
-                    cv2.imshow('Video Frame', frame)
+                # if display_frame:
+                #    cv2.imshow('Video Frame', frame)
                 # Predict with the model
 
                 results = model(frame)  # predict on an image
@@ -246,8 +244,8 @@ else:
                           results[0].tojson(normalize=True))
 
                 res_plotted = results[0].plot()
-                if display_yolo:
-                    cv2.imshow("result", res_plotted)
+                # if display_yolo:
+                #    cv2.imshow("result", res_plotted)
 
                 # Convert the frame received from OpenCV to a MediaPipe’s Image object.
                 mp_image = mp.Image(
@@ -297,26 +295,6 @@ else:
                     annotated_image_rgb = cv2.cvtColor(
                         annotated_image, cv2.COLOR_RGB2BGR)
 
-                    font = cv2.FONT_HERSHEY_SIMPLEX
-                    bottomLeftCornerOfText = (10, 30)
-                    fontScale = 0.8
-                    fontColor = (255, 255, 255)
-                    thickness = 1
-                    lineType = 2
-
-                    cv2.putText(annotated_image_rgb, frame_information,
-                                bottomLeftCornerOfText,
-                                font,
-                                fontScale,
-                                fontColor,
-                                thickness,
-                                lineType)
-                    if print_all:
-                        print("Image: ", annotated_image)
-                    if display_mediapipe:
-                        cv2.imshow("MediaPipe Fame", annotated_image_rgb)
-                    if save_video:
-                        out.write(annotated_image_rgb)
                 # Press Q on keyboard to  exit
                 # Compare distance
 
@@ -329,13 +307,16 @@ else:
                     index = 0
 
                     # print("MEDIAPIPE:", dictionary[selectedVideo["id"]]["frames"
-                    #                                                    ][frames_count]["mediapipe"]["keypoints"][0])
+                    # filter indexes metch to yolo from 33 mediapipe keypoints
+                    #                                                 ][frames_count]["mediapipe"]["keypoints"][0])
+                    filter_indices = [0, 2, 5, 7, 8, 11, 12,
+                                      13, 14, 15, 16, 23, 24, 25, 26, 27, 28]
                     for yolo_pose in dictionary[selectedVideo["id"]]["frames"][frames_count]["YOLO"]["keypoints"]:
                         # print("YOLO:", yolo_pose)
 
                         distance = average_distance(yolo_pose,
                                                     dictionary[selectedVideo["id"]]["frames"
-                                                                                    ][frames_count]["mediapipe"]["keypoints"][0])
+                                                                                    ][frames_count]["mediapipe"]["keypoints"][0][filter_indices])
                         if (minor_distance > distance):
                             minor_distance = distance
                             minor_yolo_distance_index = index
@@ -345,10 +326,55 @@ else:
                     f'{quantidade_poses_mediapipe:02}'+"| Indice: " + f'{minor_yolo_distance_index:02}' + \
                     "| Menor Distancia Euclidiana Média: " + \
                     f'{minor_distance:03.15f}'
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                bottomLeftCornerOfText = (10, 30)
+                fontScale = 0.8
+                fontColor = (255, 255, 255)
+                thickness = 1
+                lineType = 2
+
+                cv2.putText(frame, frame_information,
+                            bottomLeftCornerOfText,
+                            font,
+                            fontScale,
+                            fontColor,
+                            thickness,
+                            lineType)
+                cv2.putText(res_plotted, frame_information,
+                            bottomLeftCornerOfText,
+                            font,
+                            fontScale,
+                            fontColor,
+                            thickness,
+                            lineType)
+                cv2.putText(annotated_image_rgb, frame_information,
+                            bottomLeftCornerOfText,
+                            font,
+                            fontScale,
+                            fontColor,
+                            thickness,
+                            lineType)
                 if print_resume:
                     print(
                         # "\033[K",
                         frame_information, end="\r")
+
+                if display_frame:
+                    if (quantidade_poses_mediapipe > 0):
+                        cv2.imshow("Fame", annotated_image_rgb)
+                    else:
+                        if quantidade_poses_yolo > 0:
+                            cv2.imshow("Fame", res_plotted)
+                        else:
+                            cv2.imshow("Fame", frame)
+                if save_video:
+                    if (quantidade_poses_mediapipe > 0):
+                        out.write(annotated_image_rgb)
+                    else:
+                        if quantidade_poses_yolo > 0:
+                            out.write(res_plotted)
+                        else:
+                            out.write(frame)
 
                 if cv2.waitKey(25) & 0xFF == ord('q'):
                     break
@@ -362,7 +388,7 @@ else:
             out.release()
         # print(dictionary)
         dictionary[selectedVideo["id"]
-                   ]["frames_count"] = frames_count-1
+                   ]["frames_count"] = frames_count
         # Closes all the frames
         cv2.destroyAllWindows()
 
@@ -384,5 +410,5 @@ class NpEncoder(json.JSONEncoder):
 
 
 if save_file:
-    file1.write(str(dictionary))
+    file1.write(json.dumps(dictionary, indent=4, cls=NpEncoder))
     file1.close()
