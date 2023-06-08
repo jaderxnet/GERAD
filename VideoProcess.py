@@ -10,10 +10,22 @@ Create Python class to process each video  in processedVideos.csv
 
 6 - Calculate the difference betwen inferences
 7 - Save a file by video with all the inferences frames
-    A - Media Pipe Landmarks 
-    B - Yolo8 Landmarks 
-    C - Frame
-    D - FPS
+    A - Youtube ID
+    B - Duration
+    V - FPS
+    D - Frames
+        1 - Frame ID
+        2 - Yolo8 Landmarks
+        3 - Media Pipe Landmarks
+        4 - (EPDNVP)EndPoint Diference Normalized Euclidian distance sum multiply by visivle product
+        5 - (EPDNMVP)Normalized Euclidian distance media
+        6 - (EPDNM)Normalized Euclidian distance multiply by visivle product media
+        7 - (EPE)EndPoint Error (EPE) - Pixel Euclidian distance media
+    E - Media of Normalized Euclidian distance sum multiply by visivle product
+    F - Media of Normalized Euclidian distance media
+    G - Media of Normalized Euclidian distance multiply by visivle product media
+    H - Media of EndPoint Error (EPE) - Pixel Euclidian distance media
+    
 7 - Save a file with sequences:
     A - Initial and final frame 
     B - Media Calculated difference ;
@@ -81,7 +93,7 @@ def average_distance(keypoints1, keypoints2):
 inputFilePath = "processedVideos.csv"
 
 # options
-save_video = True
+save_video = False
 save_file = True
 debug_yolo = False
 debug_mediaPipe = False
@@ -177,6 +189,9 @@ else:
         dictionary[selectedVideo["id"]]["duration"] = selectedVideo["duration"]
         dictionary[selectedVideo["id"]]["fps"] = selectedVideo["fps"]
         # frames have the dictionary with frame id
+        # (EPDNVP)EndPoint Diference Normalized Euclidian distance sum multiply by visivle product
+        media_distance = 0
+        media_count = 0
         dictionary[selectedVideo["id"]]["frames"] = {}
 
         # record video
@@ -322,10 +337,29 @@ else:
                             minor_yolo_distance_index = index
                         index += 1
                         # print("Index: ", index, "Media: ", distance)
+
+                    # (EPDNVP)EndPoint Diference Normalized Euclidian distance sum multiply by visivle product
+                    dictionary[selectedVideo["id"]
+                               ]["frames"][frames_count]["EPDNVP"] = minor_distance
+                    media_distance += minor_distance
+                    media_count += 1
+                # (EPDNM)Normalized Euclidian distance media
+#                dictionary[selectedVideo["id"]
+#                           ]["frames"][frames_count]["EPDNMVP"]
+                # (EPDNMVP)Normalized Euclidian distance multiply by visivle product media
+#                dictionary[selectedVideo["id"]
+#                           ]["frames"][frames_count]["EPDNM"]
+                # (EPE)EndPoint Error (EPE) - Pixel Euclidian distance media
+#                dictionary[selectedVideo["id"]
+#                           ]["frames"][frames_count]["EPE"]
+
                 frame_information = "| Frame" + f'{frames_count:06}'+"| Quant Poses YOLO: " + f'{quantidade_poses_yolo:02}'+"| Quant Poses Mediapipe" + \
                     f'{quantidade_poses_mediapipe:02}'+"| Indice: " + f'{minor_yolo_distance_index:02}' + \
-                    "| Menor Distancia Euclidiana Média: " + \
+                    "| Menor Distancia : " + \
                     f'{minor_distance:03.15f}'
+                if (media_count > 0):
+                    frame_information = frame_information + "| Media : " + \
+                        f'{media_distance/media_count:03.15f}'
                 font = cv2.FONT_HERSHEY_SIMPLEX
                 bottomLeftCornerOfText = (10, 30)
                 fontScale = 0.8
@@ -389,6 +423,19 @@ else:
         # print(dictionary)
         dictionary[selectedVideo["id"]
                    ]["frames_count"] = frames_count
+        if (media_count > 0):
+            dictionary[selectedVideo["id"]
+                       ]["EPDNVP"] = media_distance/media_count
+        # (EPDNM)Normalized Euclidian distance media
+#        dictionary[selectedVideo["id"]
+#                    ]["EPDNMVP"]
+        # (EPDNMVP)Normalized Euclidian distance multiply by visivle product media
+#        dictionary[selectedVideo["id"]
+#                    ]["EPDNM"]
+        # (EPE)EndPoint Error (EPE) - Pixel Euclidian distance media
+#        dictionary[selectedVideo["id"]
+#                    ]["EPE"]
+
         # Closes all the frames
         cv2.destroyAllWindows()
 
