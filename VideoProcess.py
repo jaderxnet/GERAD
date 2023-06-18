@@ -17,10 +17,10 @@ Create Python class to process each video  in processedVideos.csv
         1 - Frame ID
         2 - Yolo8 Landmarks
         3 - Media Pipe Landmarks
-        4 - (EPDNVP)EndPoint Diference Normalized Euclidian distance sum multiply by visivle product
-        5 - (EPDNMVP)Normalized Euclidian distance media
-        6 - (EPDNM)Normalized Euclidian distance multiply by visivle product media
-        7 - (EPE)EndPoint Error (EPE) - Pixel Euclidian distance media
+        4 OK - (EPDNVP)EndPoint Diference Normalized Euclidian distance sum multiply by visivle product
+        5 - (EPDNMVP) Normalized Euclidian distance multiply by visivle product media
+        6 - (EPDNM) Normalized Euclidian distance media
+        7 OK - (EPE)EndPoint Error (EPE) - Pixel Euclidian distance media
     E - Media of Normalized Euclidian distance sum multiply by visivle product
     F - Media of Normalized Euclidian distance media
     G - Media of Normalized Euclidian distance multiply by visivle product media
@@ -80,20 +80,55 @@ def draw_landmarks_on_image(rgb_image, detection_result):
     return annotated_image
 
 
-def average_distance(keypoints1, keypoints2):
-    averege = 0
+def normalize_distance_visible(keypoints1, keypoints2):
+    sum_distance = 0
     for point1, point2 in zip(keypoints1, keypoints2):
         dist = np.linalg.norm(point1[0:2]-point2[0:2])
         if (len(point1) > 2 and len(point2) > 2):
             dist *= point1[-1]*point2[-1]
+        sum_distance += dist
+    return sum_distance
+
+
+def normalize_distance_media(keypoints1, keypoints2):
+    sum_distance = 0
+    for point1, point2 in zip(keypoints1, keypoints2):
+        dist = np.linalg.norm(point1[0:2]-point2[0:2])
+        sum_distance += dist
+    sum_distance /= 17
+    return sum_distance
+
+
+def average_pixel_distance(keypoints1, keypoints2):
+    averege = 0
+    count = 0
+    # print("Keys 1:", keypoints1, " Keys 2: ", keypoints2)
+    for point1, point2 in zip(keypoints1, keypoints2):
+        dist = np.linalg.norm(point1[0:2] - point2[0:2])
+        # print("dist ", dist)
         averege += dist
+        count += 1
+        # print("average ", count, " - ", averege)
+    averege = averege/17
+    # print("average /17 - ", averege)
     return averege
+
+
+SCREEN_DIMENSIONS = (1920, 1080)
+
+
+def to_pixel_coords(relative_coords):
+    # print("to_pixel_coords: ", relative_coords)
+    result = []
+    for coord in relative_coords:
+        result.append(coord[1:3] * SCREEN_DIMENSIONS)
+    return result
 
 
 inputFilePath = "processedVideos.csv"
 
 # options
-save_video = False
+save_video = True
 save_file = True
 debug_yolo = False
 debug_mediaPipe = False
@@ -190,8 +225,13 @@ else:
         dictionary[selectedVideo["id"]]["fps"] = selectedVideo["fps"]
         # frames have the dictionary with frame id
         # (EPDNVP)EndPoint Diference Normalized Euclidian distance sum multiply by visivle product
-        media_distance = 0
+        media_distance_EPDNVP = 0
+        media_distance_EPDNM = 0
+        media_distance_EPDNMVP = 0
         media_count = 0
+        # (EPE)EndPoint Error (EPE) - Pixel Euclidian distance media
+        media_distance_EPE = 0
+
         dictionary[selectedVideo["id"]]["frames"] = {}
 
         # record video
@@ -313,8 +353,14 @@ else:
                 # Press Q on keyboard to  exit
                 # Compare distance
 
-                minor_distance = 100
-                minor_yolo_distance_index = -1
+                minor_distance_EPDNVP = 100000
+                minor_distance_EPDNM = 100000
+                minor_distance_EPDNMVP = 100000
+                minor_distance_EPE = 100000
+                minor_yolo_distance_index_EPDNVP = -1
+                minor_yolo_distance_index_EPDNM = -1
+                minor_yolo_distance_index_EPDNMVP = -1
+                minor_yolo_distance_index_EPE = -1
                 if (dictionary[selectedVideo["id"]
                                ]["frames"][frames_count]["mediapipe"]["poses_count"] > 0
                    and dictionary[selectedVideo["id"]
@@ -326,22 +372,51 @@ else:
                     #                                                 ][frames_count]["mediapipe"]["keypoints"][0])
                     filter_indices = [0, 2, 5, 7, 8, 11, 12,
                                       13, 14, 15, 16, 23, 24, 25, 26, 27, 28]
+
                     for yolo_pose in dictionary[selectedVideo["id"]]["frames"][frames_count]["YOLO"]["keypoints"]:
                         # print("YOLO:", yolo_pose)
 
-                        distance = average_distance(yolo_pose,
-                                                    dictionary[selectedVideo["id"]]["frames"
-                                                                                    ][frames_count]["mediapipe"]["keypoints"][0][filter_indices])
-                        if (minor_distance > distance):
-                            minor_distance = distance
-                            minor_yolo_distance_index = index
-                        index += 1
+                        distance_EPDNVP = normalize_distance_visible(yolo_pose,
+                                                                     dictionary[selectedVideo["id"]]["frames"
+                                                                                                     ][frames_count]["mediapipe"]["keypoints"][0][filter_indices])
+                        if (minor_distance_EPDNVP > distance_EPDNVP):
+                            minor_distance_EPDNVP = distance_EPDNVP
+                            minor_yolo_distance_index_EPDNVP = index
+
+                        distance_EPDNMVP = distance_EPDNVP/17
+                        if (minor_distance_EPDNMVP > distance_EPDNMVP):
+                            minor_distance_EPDNMVP = distance_EPDNMVP
+                            minor_yolo_distance_index_EPDNMVP = index
+
+                        distance_EPDNM = normalize_distance_media(yolo_pose,
+                                                                  dictionary[selectedVideo["id"]]["frames"
+                                                                                                  ][frames_count]["mediapipe"]["keypoints"][0][filter_indices])
+                        if (minor_distance_EPDNM > distance_EPDNM):
+                            minor_distance_EPDNM = distance_EPDNM
+                            minor_yolo_distance_index_EPDNM = index
+
                         # print("Index: ", index, "Media: ", distance)
+                        distance_EPE = average_pixel_distance(to_pixel_coords(yolo_pose),
+                                                              to_pixel_coords(dictionary[selectedVideo["id"]]["frames"
+                                                                                                              ][frames_count]["mediapipe"]["keypoints"][0][filter_indices]))
+                        if (minor_distance_EPE > distance_EPE):
+                            minor_distance_EPE = distance_EPE
+                            minor_yolo_distance_index_EPE = index
+                        index += 1
 
                     # (EPDNVP)EndPoint Diference Normalized Euclidian distance sum multiply by visivle product
                     dictionary[selectedVideo["id"]
-                               ]["frames"][frames_count]["EPDNVP"] = minor_distance
-                    media_distance += minor_distance
+                               ]["frames"][frames_count]["EPDNVP"] = minor_distance_EPDNVP
+                    media_distance_EPDNVP += minor_distance_EPDNVP
+                    dictionary[selectedVideo["id"]
+                               ]["frames"][frames_count]["EPDNMVP"] = minor_distance_EPDNMVP
+                    media_distance_EPDNMVP += minor_distance_EPDNMVP
+                    dictionary[selectedVideo["id"]
+                               ]["frames"][frames_count]["EPDNM"] = minor_distance_EPDNM
+                    media_distance_EPDNM += minor_distance_EPDNM
+                    dictionary[selectedVideo["id"]
+                               ]["frames"][frames_count]["EPE"] = minor_distance_EPE
+                    media_distance_EPE += minor_distance_EPE
                     media_count += 1
                 # (EPDNM)Normalized Euclidian distance media
 #                dictionary[selectedVideo["id"]
@@ -353,41 +428,54 @@ else:
 #                dictionary[selectedVideo["id"]
 #                           ]["frames"][frames_count]["EPE"]
 
-                frame_information = "| Frame" + f'{frames_count:06}'+"| Quant Poses YOLO: " + f'{quantidade_poses_yolo:02}'+"| Quant Poses Mediapipe" + \
-                    f'{quantidade_poses_mediapipe:02}'+"| Indice: " + f'{minor_yolo_distance_index:02}' + \
-                    "| Menor Distancia : " + \
-                    f'{minor_distance:03.15f}'
+                frame_information = "| Frame" + f'{frames_count:06}' + \
+                    "| YOLO: " + f'{quantidade_poses_yolo:02}' + \
+                    "| Mediapipe: " + f'{quantidade_poses_mediapipe:02}' + \
+                    "| EPDNVP INDEX : " + f'{minor_yolo_distance_index_EPDNVP:02}' + \
+                    " : " + f'{minor_distance_EPDNVP:06.15f}' + \
+                    "| EPDNMVP INDEX : " + f'{minor_yolo_distance_index_EPDNMVP:02}' + \
+                    " : " + f'{minor_distance_EPDNMVP:06.15f}' + '\n' +\
+                    "| EPDNM INDEX : " + f'{minor_yolo_distance_index_EPDNM:02}' + \
+                    " : " + f'{minor_distance_EPDNM:06.15f}' +  \
+                    "| EPE INDEX : " + f'{minor_yolo_distance_index_EPE:02}' + \
+                    " : " + f'{minor_distance_EPE:06.15f}'
                 if (media_count > 0):
-                    frame_information = frame_information + "| Media : " + \
-                        f'{media_distance/media_count:03.15f}'
+                    frame_information = frame_information + \
+                        "| Media EPDNVP: " + f'{media_distance_EPDNVP/media_count:06.15f}' + '\n' +\
+                        "| Media EPDNMVP: " + f'{media_distance_EPDNMVP/media_count:06.15f}' + \
+                        "| Media EPDNM: " + f'{media_distance_EPDNM/media_count:06.15f}' + \
+                        "| Media EPE: " + \
+                        f'{media_distance_EPE/media_count:06.15f}'
                 font = cv2.FONT_HERSHEY_SIMPLEX
                 bottomLeftCornerOfText = (10, 30)
                 fontScale = 0.8
                 fontColor = (255, 255, 255)
                 thickness = 1
                 lineType = 2
-
-                cv2.putText(frame, frame_information,
-                            bottomLeftCornerOfText,
-                            font,
-                            fontScale,
-                            fontColor,
-                            thickness,
-                            lineType)
-                cv2.putText(res_plotted, frame_information,
-                            bottomLeftCornerOfText,
-                            font,
-                            fontScale,
-                            fontColor,
-                            thickness,
-                            lineType)
-                cv2.putText(annotated_image_rgb, frame_information,
-                            bottomLeftCornerOfText,
-                            font,
-                            fontScale,
-                            fontColor,
-                            thickness,
-                            lineType)
+                dy = 40
+                for i, line in enumerate(frame_information.split('\n')):
+                    y = bottomLeftCornerOfText[1] + i*dy
+                    cv2.putText(frame, line,
+                                (bottomLeftCornerOfText[0], y),
+                                font,
+                                fontScale,
+                                fontColor,
+                                thickness,
+                                lineType)
+                    cv2.putText(res_plotted, line,
+                                (bottomLeftCornerOfText[0], y),
+                                font,
+                                fontScale,
+                                fontColor,
+                                thickness,
+                                lineType)
+                    cv2.putText(annotated_image_rgb, line,
+                                (bottomLeftCornerOfText[0], y),
+                                font,
+                                fontScale,
+                                fontColor,
+                                thickness,
+                                lineType)
                 if print_resume:
                     print(
                         # "\033[K",
@@ -425,7 +513,13 @@ else:
                    ]["frames_count"] = frames_count
         if (media_count > 0):
             dictionary[selectedVideo["id"]
-                       ]["EPDNVP"] = media_distance/media_count
+                       ]["EPDNVP"] = media_distance_EPDNVP/media_count
+            dictionary[selectedVideo["id"]
+                       ]["EPDNMVP"] = media_distance_EPDNMVP/media_count
+            dictionary[selectedVideo["id"]
+                       ]["EPDNM"] = media_distance_EPDNM/media_count
+            dictionary[selectedVideo["id"]
+                       ]["EPE"] = media_distance_EPE/media_count
         # (EPDNM)Normalized Euclidian distance media
 #        dictionary[selectedVideo["id"]
 #                    ]["EPDNMVP"]
