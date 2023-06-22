@@ -2,11 +2,14 @@ import numpy as np
 from matplotlib import colors
 import matplotlib.pyplot as plt
 import json
-
+# videos/Br8xTiOqvdA
+# videos/cveTsmWApp8
+# videos/FW-RjHXbyq8
+# videos/xX0ZWd8KfbM
 path = "videos/"
-folder = "dNHUhaLqr7c"
-file_name = "TextDisplay5Out5dNHUhaLqr7c"
-id = "dNHUhaLqr7c"
+folder = "xX0ZWd8KfbM"
+file_name = "xX0ZWd8KfbM"
+id = "xX0ZWd8KfbM"
 f = open(path + folder + "/" + file_name+".txt", "r")
 text = f.read().replace('\n', '')
 

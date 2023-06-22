@@ -39,6 +39,7 @@ from mediapipe.tasks.python import vision
 from mediapipe.tasks import python
 import mediapipe as mp
 import os.path
+import os
 import json
 import numpy as np
 from mediapipe.framework.formats import landmark_pb2
@@ -56,6 +57,17 @@ ultralytics.checks()
 # Dowload python > 3.9 version in https://www.python.org/downloads
 #!pip install -q mediapipe==0.10.0
 print("MEDIAPIPE: ", mp.__version__)
+
+
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NpEncoder, self).default(obj)
 
 
 def draw_landmarks_on_image(rgb_image, detection_result):
@@ -134,7 +146,7 @@ debug_yolo = False
 debug_mediaPipe = False
 print_all = False
 print_resume = True
-download_video = False
+download_video = True
 display_frame = False
 
 
@@ -162,16 +174,16 @@ else:
     else:
 
         videosTable.at[indexesToProcess.tolist()[0], 'status'] = 'Processing'
-        # videosTable.to_csv(inputFilePath, index=False, sep=';')
+        videosTable.to_csv(inputFilePath, index=False, sep=';')
         selectedVideo = videosTable.loc[indexesToProcess.tolist()[0]]
         if print_all:
             print("Index to update: ", indexesToProcess.tolist()[0])
             print("Updated Table: ", videosTable)
             print("Selected Video: ", selectedVideo)
         options = {
-            # 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
+            'format': 'bestvideo[ext=mp4]',
             # This will select the specific resolution typed here
-            "format": "mp4[height=1080]",
+            # "format": "mp4[height=1080]",
             'no_check_certificate': True,
             # "%(id)s/%(id)s-%(title)s.%(ext)s"
             "outtmpl": "videos/%(id)s/%(id)s.%(ext)s"
@@ -210,9 +222,11 @@ else:
                                + ".mp4")
 
         outputFilePath = "/Users/jaderxnet/Documents/GitHub/GERAD/videos/" + \
-            selectedVideo['id'] + "/" + selectedVideo['id']+".txt"
+            selectedVideo['id']
         file1 = None
         if save_file:
+            # os.mkdir(outputFilePath)
+            outputFilePath += "/" + selectedVideo['id']+".txt"
             file1 = open(outputFilePath, "w")
 
         if (cap.isOpened() == False):
@@ -537,19 +551,9 @@ else:
         # You’ll need it to calculate the timestamp for each frame.
 
         # Loop through each frame in the video using VideoCapture#read()
+        videosTable.at[indexesToProcess.tolist()[0], 'status'] = 'Processed'
+        videosTable.to_csv(inputFilePath, index=False, sep=';')
 
-
-class NpEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        if isinstance(obj, np.floating):
-            return float(obj)
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return super(NpEncoder, self).default(obj)
-
-
-if save_file:
-    file1.write(json.dumps(dictionary, indent=4, cls=NpEncoder))
-    file1.close()
+        if save_file:
+            file1.write(json.dumps(dictionary, indent=4, cls=NpEncoder))
+            file1.close()
