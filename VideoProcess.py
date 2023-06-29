@@ -137,8 +137,6 @@ def to_pixel_coords(relative_coords):
     return result
 
 
-inputFilePath = "processedVideos.csv"
-
 # options
 save_video = True
 save_file = True
@@ -149,7 +147,7 @@ print_resume = True
 download_video = True
 display_frame = False
 
-
+inputFilePath = "processedVideos.csv"
 videosTable = pd.read_csv(inputFilePath, sep=';')
 filtered = videosTable["status"] == "Processing"
 
