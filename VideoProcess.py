@@ -172,388 +172,389 @@ else:
     if (len(indexesToProcess) < 1):
         print("ALL VIDEOS PROCESSED!")
     else:
-
-        videosTable.at[indexesToProcess.tolist()[0], 'status'] = 'Processing'
-        videosTable.to_csv(inputFilePath, index=False, sep=';')
-        selectedVideo = videosTable.loc[indexesToProcess.tolist()[0]]
-        if print_all:
-            print("Index to update: ", indexesToProcess.tolist()[0])
-            print("Updated Table: ", videosTable)
-            print("Selected Video: ", selectedVideo)
-        options = {
-            'format': 'bestvideo[ext=mp4]',
-            # This will select the specific resolution typed here
-            # "format": "mp4[height=1080]",
-            'no_check_certificate': True,
-            # "%(id)s/%(id)s-%(title)s.%(ext)s"
-            "outtmpl": "videos/%(id)s/%(id)s.%(ext)s"
-        }
-        if download_video:
-            with YoutubeDL(options) as ydl:
-                ydl.download([selectedVideo['url']])
+        for indexToProcess in indexesToProcess.tolist():
+            videosTable.at[indexToProcess, 'status'] = 'Processing'
+            videosTable.to_csv(inputFilePath, index=False, sep=';')
+            selectedVideo = videosTable.loc[indexToProcess]
             if print_all:
-                print('Download Concluído: ', selectedVideo['id'])
-        # see OUTPUT TEMPLATE in https://github.com/ytdl-org/youtube-dl
+                print("Index to update: ", indexToProcess)
+                print("Updated Table: ", videosTable)
+                print("Selected Video: ", selectedVideo)
+            options = {
+                'format': 'bestvideo[ext=mp4]',
+                # This will select the specific resolution typed here
+                # "format": "mp4[height=1080]",
+                'no_check_certificate': True,
+                # "%(id)s/%(id)s-%(title)s.%(ext)s"
+                "outtmpl": "videos/%(id)s/%(id)s.%(ext)s"
+            }
+            if download_video:
+                with YoutubeDL(options) as ydl:
+                    ydl.download([selectedVideo['url']])
+                if print_all:
+                    print('Download Concluído: ', selectedVideo['id'])
+            # see OUTPUT TEMPLATE in https://github.com/ytdl-org/youtube-dl
 
-        # https://developers.google.com/mediapipe/solutions/vision/pose_landmarker/python
-        # https://developers.google.com/mediapipe/solutions/vision/pose_landmarker/index#models
-        model_path_lite = '/Users/jaderxnet/Documents/GitHub/GERAD/neuralNetworks/mediapipe/pose_landmarker_lite.task'
-        model_path_Heavy = '/Users/jaderxnet/Documents/GitHub/GERAD/neuralNetworks/mediapipe/pose_landmarker_heavy.task'
+            # https://developers.google.com/mediapipe/solutions/vision/pose_landmarker/python
+            # https://developers.google.com/mediapipe/solutions/vision/pose_landmarker/index#models
+            model_path_lite = '/Users/jaderxnet/Documents/GitHub/GERAD/neuralNetworks/mediapipe/pose_landmarker_lite.task'
+            model_path_Heavy = '/Users/jaderxnet/Documents/GitHub/GERAD/neuralNetworks/mediapipe/pose_landmarker_heavy.task'
 
-        BaseOptions = mp.tasks.BaseOptions
-        PoseLandmarker = mp.tasks.vision.PoseLandmarker
-        PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
-        VisionRunningMode = mp.tasks.vision.RunningMode
-        PoseLandmarkerResult = mp.tasks.vision.PoseLandmarkerResult
+            BaseOptions = mp.tasks.BaseOptions
+            PoseLandmarker = mp.tasks.vision.PoseLandmarker
+            PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
+            VisionRunningMode = mp.tasks.vision.RunningMode
+            PoseLandmarkerResult = mp.tasks.vision.PoseLandmarkerResult
 
-        # Create a pose landmarker instance with the video mode:
-        options = PoseLandmarkerOptions(
-            base_options=BaseOptions(model_asset_path=model_path_Heavy),
-            running_mode=VisionRunningMode.VIDEO)
+            # Create a pose landmarker instance with the video mode:
+            options = PoseLandmarkerOptions(
+                base_options=BaseOptions(model_asset_path=model_path_Heavy),
+                running_mode=VisionRunningMode.VIDEO)
 
-        # Load a model
-        model_file = 'neuralNetworks/YOLO/yolov8n-pose.pt'
-        model = YOLO(model_file)  # load an official model
-        # model = YOLO('path/to/best.pt')  # load a custom model
+            # Load a model
+            model_file = 'neuralNetworks/YOLO/yolov8n-pose.pt'
+            model = YOLO(model_file)  # load an official model
+            # model = YOLO('path/to/best.pt')  # load a custom model
 
-        # Use OpenCV’s VideoCapture to load the input video.
-        cap = cv2.VideoCapture("videos/" + selectedVideo['id']
-                               + "/" + selectedVideo['id']
-                               + ".mp4")
+            # Use OpenCV’s VideoCapture to load the input video.
+            cap = cv2.VideoCapture("videos/" + selectedVideo['id']
+                                   + "/" + selectedVideo['id']
+                                   + ".mp4")
 
-        outputFilePath = "/Users/jaderxnet/Documents/GitHub/GERAD/videos/" + \
-            selectedVideo['id']
-        file1 = None
-        if save_file:
-            # os.mkdir(outputFilePath)
-            outputFilePath += "/" + selectedVideo['id']+".txt"
-            file1 = open(outputFilePath, "w")
+            outputFilePath = "/Users/jaderxnet/Documents/GitHub/GERAD/videos/" + \
+                selectedVideo['id']
+            file1 = None
+            if save_file:
+                # os.mkdir(outputFilePath)
+                outputFilePath += "/" + selectedVideo['id']+".txt"
+                file1 = open(outputFilePath, "w")
 
-        if (cap.isOpened() == False):
-            print("Error opening video stream or file")
+            if (cap.isOpened() == False):
+                print("Error opening video stream or file")
 
-        dictionary = {}
-        # dictionary with video id on youtube
-        dictionary[selectedVideo["id"]] = {}
-        dictionary[selectedVideo["id"]]["duration"] = selectedVideo["duration"]
-        dictionary[selectedVideo["id"]]["fps"] = selectedVideo["fps"]
-        # frames have the dictionary with frame id
-        # (EPDNVP)EndPoint Diference Normalized Euclidian distance sum multiply by visivle product
-        media_distance_EPDNVP = 0
-        media_distance_EPDNM = 0
-        media_distance_EPDNMVP = 0
-        media_count = 0
-        # (EPE)EndPoint Error (EPE) - Pixel Euclidian distance media
-        media_distance_EPE = 0
+            dictionary = {}
+            # dictionary with video id on youtube
+            dictionary[selectedVideo["id"]] = {}
+            dictionary[selectedVideo["id"]
+                       ]["duration"] = selectedVideo["duration"]
+            dictionary[selectedVideo["id"]]["fps"] = selectedVideo["fps"]
+            # frames have the dictionary with frame id
+            # (EPDNVP)EndPoint Diference Normalized Euclidian distance sum multiply by visivle product
+            media_distance_EPDNVP = 0
+            media_distance_EPDNM = 0
+            media_distance_EPDNMVP = 0
+            media_count = 0
+            # (EPE)EndPoint Error (EPE) - Pixel Euclidian distance media
+            media_distance_EPE = 0
 
-        dictionary[selectedVideo["id"]]["frames"] = {}
+            dictionary[selectedVideo["id"]]["frames"] = {}
 
-        # record video
-        fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-        out = None
-        if save_video:
-            out = cv2.VideoWriter('videos/'+selectedVideo["id"]+'/Out2' + selectedVideo["id"]+'.mp4', fourcc, 20.0,
-                                  (selectedVideo["width"], selectedVideo["height"]))
+            # record video
+            fourcc = cv2.VideoWriter_fourcc(*'MP4V')
+            out = None
+            if save_video:
+                out = cv2.VideoWriter('videos/'+selectedVideo["id"]+'/Out2' + selectedVideo["id"]+'.mp4', fourcc, 20.0,
+                                      (selectedVideo["width"], selectedVideo["height"]))
 
-        if print_all:
-            print(dictionary)
-        print_count = 0
-        frames_count = 0
-        # Read until video is completed
-        frame_information = ""
-        while (cap.isOpened()):
-            # Capture frame-by-frame
+            if print_all:
+                print(dictionary)
+            print_count = 0
+            frames_count = 0
+            # Read until video is completed
+            frame_information = ""
+            while (cap.isOpened()):
+                # Capture frame-by-frame
 
-            ret, frame = cap.read()
+                ret, frame = cap.read()
 
-            if ret == True:
-                frames_count += 1
-                # frames have the dictionary with frame id
-                dictionary[selectedVideo["id"]
-                           ]["frames"][frames_count] = {}
-                # Display the resulting frame
-                # if display_frame:
-                #    cv2.imshow('Video Frame', frame)
-                # Predict with the model
+                if ret == True:
+                    frames_count += 1
+                    # frames have the dictionary with frame id
+                    dictionary[selectedVideo["id"]
+                               ]["frames"][frames_count] = {}
+                    # Display the resulting frame
+                    # if display_frame:
+                    #    cv2.imshow('Video Frame', frame)
+                    # Predict with the model
 
-                results = model(frame)  # predict on an image
-                quantidade_poses_yolo = len(results[0].keypoints)
-                if print_all or debug_yolo:
-                    print("Quant Poses YOLO: ", quantidade_poses_yolo)
-                    print("Quant restults: ", len(results))
-                dictionary[selectedVideo["id"]
-                           ]["frames"][frames_count]["YOLO"] = {}
-                dictionary[selectedVideo["id"]
-                           ]["frames"][frames_count]["YOLO"]["neural_network_file"] = model_file
-                dictionary[selectedVideo["id"]
-                           ]["frames"][frames_count]["YOLO"]["poses_count"] = quantidade_poses_yolo
-
-                if quantidade_poses_yolo > 0:
-                    results_json = results[0].tojson(normalize=True)
-                    results_json = json.loads(results_json)
+                    results = model(frame)  # predict on an image
+                    quantidade_poses_yolo = len(results[0].keypoints)
                     if print_all or debug_yolo:
-                        print("TO JSON: ", results_json)
-                        print("X: ", results_json[0]["keypoints"]["x"])
+                        print("Quant Poses YOLO: ", quantidade_poses_yolo)
+                        print("Quant restults: ", len(results))
                     dictionary[selectedVideo["id"]
-                               ]["frames"][frames_count]["YOLO"]["keypoints"] = []
-                    list_poses_yolo = []
-                    for result in results_json:
-                        pose_yolo = np.stack((np.array((result["keypoints"]["x"])), np.array((
-                            result["keypoints"]["y"])), np.array((result["keypoints"]["visible"]))), axis=1)
+                               ]["frames"][frames_count]["YOLO"] = {}
+                    dictionary[selectedVideo["id"]
+                               ]["frames"][frames_count]["YOLO"]["neural_network_file"] = model_file
+                    dictionary[selectedVideo["id"]
+                               ]["frames"][frames_count]["YOLO"]["poses_count"] = quantidade_poses_yolo
+
+                    if quantidade_poses_yolo > 0:
+                        results_json = results[0].tojson(normalize=True)
+                        results_json = json.loads(results_json)
                         if print_all or debug_yolo:
-                            print("List Poses: ", pose_yolo)
-                        list_poses_yolo.append(pose_yolo)
-                    dictionary[selectedVideo["id"]
-                               ]["frames"][frames_count]["YOLO"]["keypoints"] = list_poses_yolo
-
-                if print_all or debug_yolo:
-                    print("Yolo Results: ",  results)
-
-                    print("Keypoints Results: ",
-                          results[0].tojson(normalize=True))
-
-                res_plotted = results[0].plot()
-                # if display_yolo:
-                #    cv2.imshow("result", res_plotted)
-
-                # Convert the frame received from OpenCV to a MediaPipe’s Image object.
-                mp_image = mp.Image(
-                    image_format=mp.ImageFormat.SRGB, data=frame)
-
-                # MediaPipe
-                with PoseLandmarker.create_from_options(options) as landmarker:
-                    # The landmarker is initialized. Use it here.
-                    # ...
-                    frame_timestamp_ms = selectedVideo['fps']
-                    # Perform pose landmarking on the provided single image.
-                    # The pose landmarker must be created with the video mode.
-                    pose_landmarker_result = landmarker.detect_for_video(
-                        mp_image, frame_timestamp_ms)
-                    quantidade_poses_mediapipe = len(
-                        pose_landmarker_result.pose_landmarks)
-                    if print_all or debug_mediaPipe:
-                        print("Quant Poses Mediapipe",
-                              quantidade_poses_mediapipe)
-                    # mediapipe have the dictionary  neural networks detections
-                    dictionary[selectedVideo["id"]
-                               ]["frames"][frames_count]["mediapipe"] = {}
-                    dictionary[selectedVideo["id"]
-                               ]["frames"][frames_count]["mediapipe"]["poses_count"] = quantidade_poses_mediapipe
-                    dictionary[selectedVideo["id"]
-                               ]["frames"][frames_count]["mediapipe"]["neural_network_file"] = model_path_Heavy
-                    # landmarks have the landmarks
-
-                    if print_all or debug_mediaPipe:
-                        print(pose_landmarker_result)
-                        print("Quant Poses:", quantidade_poses_mediapipe)
-
-                    if quantidade_poses_mediapipe > 0:
+                            print("TO JSON: ", results_json)
+                            print("X: ", results_json[0]["keypoints"]["x"])
                         dictionary[selectedVideo["id"]
-                                   ]["frames"][frames_count]["mediapipe"]["keypoints"] = []
-                        list_poses = []
-                        for normalize_landmark in pose_landmarker_result.pose_landmarks[0]:
-                            list_poses.append([normalize_landmark.x,
-                                               normalize_landmark.y, normalize_landmark.visibility])
-                        dictionary[selectedVideo["id"]]["frames"][frames_count
-                                                                  ]["mediapipe"]["keypoints"].append(np.array((list_poses)))
+                                   ]["frames"][frames_count]["YOLO"]["keypoints"] = []
+                        list_poses_yolo = []
+                        for result in results_json:
+                            pose_yolo = np.stack((np.array((result["keypoints"]["x"])), np.array((
+                                result["keypoints"]["y"])), np.array((result["keypoints"]["visible"]))), axis=1)
+                            if print_all or debug_yolo:
+                                print("List Poses: ", pose_yolo)
+                            list_poses_yolo.append(pose_yolo)
+                        dictionary[selectedVideo["id"]
+                                   ]["frames"][frames_count]["YOLO"]["keypoints"] = list_poses_yolo
+
+                    if print_all or debug_yolo:
+                        print("Yolo Results: ",  results)
+
+                        print("Keypoints Results: ",
+                              results[0].tojson(normalize=True))
+
+                    res_plotted = results[0].plot()
+                    # if display_yolo:
+                    #    cv2.imshow("result", res_plotted)
+
+                    # Convert the frame received from OpenCV to a MediaPipe’s Image object.
+                    mp_image = mp.Image(
+                        image_format=mp.ImageFormat.SRGB, data=frame)
+
+                    # MediaPipe
+                    with PoseLandmarker.create_from_options(options) as landmarker:
+                        # The landmarker is initialized. Use it here.
+                        # ...
+                        frame_timestamp_ms = selectedVideo['fps']
+                        # Perform pose landmarking on the provided single image.
+                        # The pose landmarker must be created with the video mode.
+                        pose_landmarker_result = landmarker.detect_for_video(
+                            mp_image, frame_timestamp_ms)
+                        quantidade_poses_mediapipe = len(
+                            pose_landmarker_result.pose_landmarks)
                         if print_all or debug_mediaPipe:
-                            print("Media PipePoses:", dictionary[selectedVideo["id"]]["frames"][frames_count
-                                                                                                ]["mediapipe"]["keypoints"])
-                    annotated_image = draw_landmarks_on_image(
-                        res_plotted, pose_landmarker_result)
-                    annotated_image_rgb = cv2.cvtColor(
-                        annotated_image, cv2.COLOR_RGB2BGR)
+                            print("Quant Poses Mediapipe",
+                                  quantidade_poses_mediapipe)
+                        # mediapipe have the dictionary  neural networks detections
+                        dictionary[selectedVideo["id"]
+                                   ]["frames"][frames_count]["mediapipe"] = {}
+                        dictionary[selectedVideo["id"]
+                                   ]["frames"][frames_count]["mediapipe"]["poses_count"] = quantidade_poses_mediapipe
+                        dictionary[selectedVideo["id"]
+                                   ]["frames"][frames_count]["mediapipe"]["neural_network_file"] = model_path_Heavy
+                        # landmarks have the landmarks
 
-                # Press Q on keyboard to  exit
-                # Compare distance
+                        if print_all or debug_mediaPipe:
+                            print(pose_landmarker_result)
+                            print("Quant Poses:", quantidade_poses_mediapipe)
 
-                minor_distance_EPDNVP = 100000
-                minor_distance_EPDNM = 100000
-                minor_distance_EPDNMVP = 100000
-                minor_distance_EPE = 100000
-                minor_yolo_distance_index_EPDNVP = -1
-                minor_yolo_distance_index_EPDNM = -1
-                minor_yolo_distance_index_EPDNMVP = -1
-                minor_yolo_distance_index_EPE = -1
-                if (dictionary[selectedVideo["id"]
-                               ]["frames"][frames_count]["mediapipe"]["poses_count"] > 0
-                   and dictionary[selectedVideo["id"]
-                                  ]["frames"][frames_count]["YOLO"]["poses_count"] > 0):
-                    index = 0
+                        if quantidade_poses_mediapipe > 0:
+                            dictionary[selectedVideo["id"]
+                                       ]["frames"][frames_count]["mediapipe"]["keypoints"] = []
+                            list_poses = []
+                            for normalize_landmark in pose_landmarker_result.pose_landmarks[0]:
+                                list_poses.append([normalize_landmark.x,
+                                                   normalize_landmark.y, normalize_landmark.visibility])
+                            dictionary[selectedVideo["id"]]["frames"][frames_count
+                                                                      ]["mediapipe"]["keypoints"].append(np.array((list_poses)))
+                            if print_all or debug_mediaPipe:
+                                print("Media PipePoses:", dictionary[selectedVideo["id"]]["frames"][frames_count
+                                                                                                    ]["mediapipe"]["keypoints"])
+                        annotated_image = draw_landmarks_on_image(
+                            res_plotted, pose_landmarker_result)
+                        annotated_image_rgb = cv2.cvtColor(
+                            annotated_image, cv2.COLOR_RGB2BGR)
 
-                    # print("MEDIAPIPE:", dictionary[selectedVideo["id"]]["frames"
-                    # filter indexes metch to yolo from 33 mediapipe keypoints
-                    #                                                 ][frames_count]["mediapipe"]["keypoints"][0])
-                    filter_indices = [0, 2, 5, 7, 8, 11, 12,
-                                      13, 14, 15, 16, 23, 24, 25, 26, 27, 28]
+                    # Press Q on keyboard to  exit
+                    # Compare distance
 
-                    for yolo_pose in dictionary[selectedVideo["id"]]["frames"][frames_count]["YOLO"]["keypoints"]:
-                        # print("YOLO:", yolo_pose)
+                    minor_distance_EPDNVP = 100000
+                    minor_distance_EPDNM = 100000
+                    minor_distance_EPDNMVP = 100000
+                    minor_distance_EPE = 100000
+                    minor_yolo_distance_index_EPDNVP = -1
+                    minor_yolo_distance_index_EPDNM = -1
+                    minor_yolo_distance_index_EPDNMVP = -1
+                    minor_yolo_distance_index_EPE = -1
+                    if (dictionary[selectedVideo["id"]
+                                   ]["frames"][frames_count]["mediapipe"]["poses_count"] > 0
+                        and dictionary[selectedVideo["id"]
+                                       ]["frames"][frames_count]["YOLO"]["poses_count"] > 0):
+                        index = 0
 
-                        distance_EPDNVP = normalize_distance_visible(yolo_pose,
-                                                                     dictionary[selectedVideo["id"]]["frames"
-                                                                                                     ][frames_count]["mediapipe"]["keypoints"][0][filter_indices])
-                        if (minor_distance_EPDNVP > distance_EPDNVP):
-                            minor_distance_EPDNVP = distance_EPDNVP
-                            minor_yolo_distance_index_EPDNVP = index
+                        # print("MEDIAPIPE:", dictionary[selectedVideo["id"]]["frames"
+                        # filter indexes metch to yolo from 33 mediapipe keypoints
+                        #                                                 ][frames_count]["mediapipe"]["keypoints"][0])
+                        filter_indices = [0, 2, 5, 7, 8, 11, 12,
+                                          13, 14, 15, 16, 23, 24, 25, 26, 27, 28]
 
-                        distance_EPDNMVP = distance_EPDNVP/17
-                        if (minor_distance_EPDNMVP > distance_EPDNMVP):
-                            minor_distance_EPDNMVP = distance_EPDNMVP
-                            minor_yolo_distance_index_EPDNMVP = index
+                        for yolo_pose in dictionary[selectedVideo["id"]]["frames"][frames_count]["YOLO"]["keypoints"]:
+                            # print("YOLO:", yolo_pose)
 
-                        distance_EPDNM = normalize_distance_media(yolo_pose,
-                                                                  dictionary[selectedVideo["id"]]["frames"
-                                                                                                  ][frames_count]["mediapipe"]["keypoints"][0][filter_indices])
-                        if (minor_distance_EPDNM > distance_EPDNM):
-                            minor_distance_EPDNM = distance_EPDNM
-                            minor_yolo_distance_index_EPDNM = index
+                            distance_EPDNVP = normalize_distance_visible(yolo_pose,
+                                                                         dictionary[selectedVideo["id"]]["frames"
+                                                                                                         ][frames_count]["mediapipe"]["keypoints"][0][filter_indices])
+                            if (minor_distance_EPDNVP > distance_EPDNVP):
+                                minor_distance_EPDNVP = distance_EPDNVP
+                                minor_yolo_distance_index_EPDNVP = index
 
-                        # print("Index: ", index, "Media: ", distance)
-                        distance_EPE = average_pixel_distance(to_pixel_coords(yolo_pose),
-                                                              to_pixel_coords(dictionary[selectedVideo["id"]]["frames"
-                                                                                                              ][frames_count]["mediapipe"]["keypoints"][0][filter_indices]))
-                        if (minor_distance_EPE > distance_EPE):
-                            minor_distance_EPE = distance_EPE
-                            minor_yolo_distance_index_EPE = index
-                        index += 1
+                            distance_EPDNMVP = distance_EPDNVP/17
+                            if (minor_distance_EPDNMVP > distance_EPDNMVP):
+                                minor_distance_EPDNMVP = distance_EPDNMVP
+                                minor_yolo_distance_index_EPDNMVP = index
 
-                    # (EPDNVP)EndPoint Diference Normalized Euclidian distance sum multiply by visivle product
-                    dictionary[selectedVideo["id"]
-                               ]["frames"][frames_count]["EPDNVP"] = minor_distance_EPDNVP
-                    media_distance_EPDNVP += minor_distance_EPDNVP
-                    dictionary[selectedVideo["id"]
-                               ]["frames"][frames_count]["EPDNMVP"] = minor_distance_EPDNMVP
-                    media_distance_EPDNMVP += minor_distance_EPDNMVP
-                    dictionary[selectedVideo["id"]
-                               ]["frames"][frames_count]["EPDNM"] = minor_distance_EPDNM
-                    media_distance_EPDNM += minor_distance_EPDNM
-                    dictionary[selectedVideo["id"]
-                               ]["frames"][frames_count]["EPE"] = minor_distance_EPE
-                    media_distance_EPE += minor_distance_EPE
-                    media_count += 1
-                # (EPDNM)Normalized Euclidian distance media
-#                dictionary[selectedVideo["id"]
-#                           ]["frames"][frames_count]["EPDNMVP"]
-                # (EPDNMVP)Normalized Euclidian distance multiply by visivle product media
-#                dictionary[selectedVideo["id"]
-#                           ]["frames"][frames_count]["EPDNM"]
-                # (EPE)EndPoint Error (EPE) - Pixel Euclidian distance media
-#                dictionary[selectedVideo["id"]
-#                           ]["frames"][frames_count]["EPE"]
+                            distance_EPDNM = normalize_distance_media(yolo_pose,
+                                                                      dictionary[selectedVideo["id"]]["frames"
+                                                                                                      ][frames_count]["mediapipe"]["keypoints"][0][filter_indices])
+                            if (minor_distance_EPDNM > distance_EPDNM):
+                                minor_distance_EPDNM = distance_EPDNM
+                                minor_yolo_distance_index_EPDNM = index
 
-                frame_information = "| Frame" + f'{frames_count:06}' + \
-                    "| YOLO: " + f'{quantidade_poses_yolo:02}' + \
-                    "| Mediapipe: " + f'{quantidade_poses_mediapipe:02}' + \
-                    "| EPDNVP INDEX : " + f'{minor_yolo_distance_index_EPDNVP:02}' + \
-                    " : " + f'{minor_distance_EPDNVP:06.15f}' + \
-                    "| EPDNMVP INDEX : " + f'{minor_yolo_distance_index_EPDNMVP:02}' + \
-                    " : " + f'{minor_distance_EPDNMVP:06.15f}' + '\n' +\
-                    "| EPDNM INDEX : " + f'{minor_yolo_distance_index_EPDNM:02}' + \
-                    " : " + f'{minor_distance_EPDNM:06.15f}' +  \
-                    "| EPE INDEX : " + f'{minor_yolo_distance_index_EPE:02}' + \
-                    " : " + f'{minor_distance_EPE:06.15f}'
-                if (media_count > 0):
-                    frame_information = frame_information + \
-                        "| Media EPDNVP: " + f'{media_distance_EPDNVP/media_count:06.15f}' + '\n' +\
-                        "| Media EPDNMVP: " + f'{media_distance_EPDNMVP/media_count:06.15f}' + \
-                        "| Media EPDNM: " + f'{media_distance_EPDNM/media_count:06.15f}' + \
-                        "| Media EPE: " + \
-                        f'{media_distance_EPE/media_count:06.15f}'
-                font = cv2.FONT_HERSHEY_SIMPLEX
-                bottomLeftCornerOfText = (10, 30)
-                fontScale = 0.8
-                fontColor = (255, 255, 255)
-                thickness = 1
-                lineType = 2
-                dy = 40
-                for i, line in enumerate(frame_information.split('\n')):
-                    y = bottomLeftCornerOfText[1] + i*dy
-                    cv2.putText(frame, line,
-                                (bottomLeftCornerOfText[0], y),
-                                font,
-                                fontScale,
-                                fontColor,
-                                thickness,
-                                lineType)
-                    cv2.putText(res_plotted, line,
-                                (bottomLeftCornerOfText[0], y),
-                                font,
-                                fontScale,
-                                fontColor,
-                                thickness,
-                                lineType)
-                    cv2.putText(annotated_image_rgb, line,
-                                (bottomLeftCornerOfText[0], y),
-                                font,
-                                fontScale,
-                                fontColor,
-                                thickness,
-                                lineType)
-                if print_resume:
-                    print(
-                        # "\033[K",
-                        frame_information, end="\r")
+                            # print("Index: ", index, "Media: ", distance)
+                            distance_EPE = average_pixel_distance(to_pixel_coords(yolo_pose),
+                                                                  to_pixel_coords(dictionary[selectedVideo["id"]]["frames"
+                                                                                                                  ][frames_count]["mediapipe"]["keypoints"][0][filter_indices]))
+                            if (minor_distance_EPE > distance_EPE):
+                                minor_distance_EPE = distance_EPE
+                                minor_yolo_distance_index_EPE = index
+                            index += 1
 
-                if display_frame:
-                    if (quantidade_poses_mediapipe > 0):
-                        cv2.imshow("Fame", annotated_image_rgb)
-                    else:
-                        if quantidade_poses_yolo > 0:
-                            cv2.imshow("Fame", res_plotted)
+                        # (EPDNVP)EndPoint Diference Normalized Euclidian distance sum multiply by visivle product
+                        dictionary[selectedVideo["id"]
+                                   ]["frames"][frames_count]["EPDNVP"] = minor_distance_EPDNVP
+                        media_distance_EPDNVP += minor_distance_EPDNVP
+                        dictionary[selectedVideo["id"]
+                                   ]["frames"][frames_count]["EPDNMVP"] = minor_distance_EPDNMVP
+                        media_distance_EPDNMVP += minor_distance_EPDNMVP
+                        dictionary[selectedVideo["id"]
+                                   ]["frames"][frames_count]["EPDNM"] = minor_distance_EPDNM
+                        media_distance_EPDNM += minor_distance_EPDNM
+                        dictionary[selectedVideo["id"]
+                                   ]["frames"][frames_count]["EPE"] = minor_distance_EPE
+                        media_distance_EPE += minor_distance_EPE
+                        media_count += 1
+                    # (EPDNM)Normalized Euclidian distance media
+    #                dictionary[selectedVideo["id"]
+    #                           ]["frames"][frames_count]["EPDNMVP"]
+                    # (EPDNMVP)Normalized Euclidian distance multiply by visivle product media
+    #                dictionary[selectedVideo["id"]
+    #                           ]["frames"][frames_count]["EPDNM"]
+                    # (EPE)EndPoint Error (EPE) - Pixel Euclidian distance media
+    #                dictionary[selectedVideo["id"]
+    #                           ]["frames"][frames_count]["EPE"]
+
+                    frame_information = "| Frame" + f'{frames_count:06}' + \
+                        "| YOLO: " + f'{quantidade_poses_yolo:02}' + \
+                        "| Mediapipe: " + f'{quantidade_poses_mediapipe:02}' + \
+                        "| EPDNVP INDEX : " + f'{minor_yolo_distance_index_EPDNVP:02}' + \
+                        " : " + f'{minor_distance_EPDNVP:06.15f}' + \
+                        "| EPDNMVP INDEX : " + f'{minor_yolo_distance_index_EPDNMVP:02}' + \
+                        " : " + f'{minor_distance_EPDNMVP:06.15f}' + '\n' +\
+                        "| EPDNM INDEX : " + f'{minor_yolo_distance_index_EPDNM:02}' + \
+                        " : " + f'{minor_distance_EPDNM:06.15f}' +  \
+                        "| EPE INDEX : " + f'{minor_yolo_distance_index_EPE:02}' + \
+                        " : " + f'{minor_distance_EPE:06.15f}'
+                    if (media_count > 0):
+                        frame_information = frame_information + \
+                            "| Media EPDNVP: " + f'{media_distance_EPDNVP/media_count:06.15f}' + '\n' +\
+                            "| Media EPDNMVP: " + f'{media_distance_EPDNMVP/media_count:06.15f}' + \
+                            "| Media EPDNM: " + f'{media_distance_EPDNM/media_count:06.15f}' + \
+                            "| Media EPE: " + \
+                            f'{media_distance_EPE/media_count:06.15f}'
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    bottomLeftCornerOfText = (10, 30)
+                    fontScale = 0.8
+                    fontColor = (255, 255, 255)
+                    thickness = 1
+                    lineType = 2
+                    dy = 40
+                    for i, line in enumerate(frame_information.split('\n')):
+                        y = bottomLeftCornerOfText[1] + i*dy
+                        cv2.putText(frame, line,
+                                    (bottomLeftCornerOfText[0], y),
+                                    font,
+                                    fontScale,
+                                    fontColor,
+                                    thickness,
+                                    lineType)
+                        cv2.putText(res_plotted, line,
+                                    (bottomLeftCornerOfText[0], y),
+                                    font,
+                                    fontScale,
+                                    fontColor,
+                                    thickness,
+                                    lineType)
+                        cv2.putText(annotated_image_rgb, line,
+                                    (bottomLeftCornerOfText[0], y),
+                                    font,
+                                    fontScale,
+                                    fontColor,
+                                    thickness,
+                                    lineType)
+                    if print_resume:
+                        print(
+                            # "\033[K",
+                            frame_information, end="\r")
+
+                    if display_frame:
+                        if (quantidade_poses_mediapipe > 0):
+                            cv2.imshow("Fame", annotated_image_rgb)
                         else:
-                            cv2.imshow("Fame", frame)
-                if save_video:
-                    if (quantidade_poses_mediapipe > 0):
-                        out.write(annotated_image_rgb)
-                    else:
-                        if quantidade_poses_yolo > 0:
-                            out.write(res_plotted)
+                            if quantidade_poses_yolo > 0:
+                                cv2.imshow("Fame", res_plotted)
+                            else:
+                                cv2.imshow("Fame", frame)
+                    if save_video:
+                        if (quantidade_poses_mediapipe > 0):
+                            out.write(annotated_image_rgb)
                         else:
-                            out.write(frame)
+                            if quantidade_poses_yolo > 0:
+                                out.write(res_plotted)
+                            else:
+                                out.write(frame)
 
-                if cv2.waitKey(25) & 0xFF == ord('q'):
+                    if cv2.waitKey(25) & 0xFF == ord('q'):
+                        break
+                # Break the loop
+                else:
                     break
-            # Break the loop
-            else:
-                break
 
-        # When everything done, release the video capture object
-        cap.release()
-        if save_video:
-            out.release()
-        # print(dictionary)
-        dictionary[selectedVideo["id"]
-                   ]["frames_count"] = frames_count
-        if (media_count > 0):
+            # When everything done, release the video capture object
+            cap.release()
+            if save_video:
+                out.release()
+            # print(dictionary)
             dictionary[selectedVideo["id"]
-                       ]["EPDNVP"] = media_distance_EPDNVP/media_count
-            dictionary[selectedVideo["id"]
-                       ]["EPDNMVP"] = media_distance_EPDNMVP/media_count
-            dictionary[selectedVideo["id"]
-                       ]["EPDNM"] = media_distance_EPDNM/media_count
-            dictionary[selectedVideo["id"]
-                       ]["EPE"] = media_distance_EPE/media_count
-        # (EPDNM)Normalized Euclidian distance media
-#        dictionary[selectedVideo["id"]
-#                    ]["EPDNMVP"]
-        # (EPDNMVP)Normalized Euclidian distance multiply by visivle product media
-#        dictionary[selectedVideo["id"]
-#                    ]["EPDNM"]
-        # (EPE)EndPoint Error (EPE) - Pixel Euclidian distance media
-#        dictionary[selectedVideo["id"]
-#                    ]["EPE"]
+                       ]["frames_count"] = frames_count
+            if (media_count > 0):
+                dictionary[selectedVideo["id"]
+                           ]["EPDNVP"] = media_distance_EPDNVP/media_count
+                dictionary[selectedVideo["id"]
+                           ]["EPDNMVP"] = media_distance_EPDNMVP/media_count
+                dictionary[selectedVideo["id"]
+                           ]["EPDNM"] = media_distance_EPDNM/media_count
+                dictionary[selectedVideo["id"]
+                           ]["EPE"] = media_distance_EPE/media_count
+            # (EPDNM)Normalized Euclidian distance media
+    #        dictionary[selectedVideo["id"]
+    #                    ]["EPDNMVP"]
+            # (EPDNMVP)Normalized Euclidian distance multiply by visivle product media
+    #        dictionary[selectedVideo["id"]
+    #                    ]["EPDNM"]
+            # (EPE)EndPoint Error (EPE) - Pixel Euclidian distance media
+    #        dictionary[selectedVideo["id"]
+    #                    ]["EPE"]
 
-        # Closes all the frames
-        cv2.destroyAllWindows()
+            # Closes all the frames
+            cv2.destroyAllWindows()
 
-        # Load the frame rate of the video using OpenCV’s CV_CAP_PROP_FPS
-        # You’ll need it to calculate the timestamp for each frame.
+            # Load the frame rate of the video using OpenCV’s CV_CAP_PROP_FPS
+            # You’ll need it to calculate the timestamp for each frame.
 
-        # Loop through each frame in the video using VideoCapture#read()
-        videosTable.at[indexesToProcess.tolist()[0], 'status'] = 'Processed'
-        videosTable.to_csv(inputFilePath, index=False, sep=';')
+            # Loop through each frame in the video using VideoCapture#read()
+            videosTable.at[indexToProcess, 'status'] = 'Processed'
+            videosTable.to_csv(inputFilePath, index=False, sep=';')
 
-        if save_file:
-            file1.write(json.dumps(dictionary, indent=4, cls=NpEncoder))
-            file1.close()
+            if save_file:
+                file1.write(json.dumps(dictionary, indent=4, cls=NpEncoder))
+                file1.close()

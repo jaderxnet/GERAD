@@ -7,9 +7,7 @@ import json
 # videos/FW-RjHXbyq8
 # videos/xX0ZWd8KfbM
 path = "videos/"
-folder = "xX0ZWd8KfbM"
-file_name = "xX0ZWd8KfbM"
-id = "xX0ZWd8KfbM"
+folder = file_name = id = "6jkn_yPV2mM"
 f = open(path + folder + "/" + file_name+".txt", "r")
 text = f.read().replace('\n', '')
 
