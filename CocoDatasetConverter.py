@@ -365,10 +365,10 @@ except:
 # Create Frames by video
 # Use OpenCV’s VideoCapture to load the input video.
 
-indexFrame = 0
-drawAll = True
-saveImages = False
-moveImages = False
+indexFrame = 1
+drawAll = False
+saveImages = True
+moveImages = True
 printAll = False
 oldVideoId = None
 cap = None
@@ -382,7 +382,7 @@ if saveImages:
         except:
             print(HOME_DIR+DATASET_PATH+"/images", "Já existe!")
         if (oldVideoId == None or oldVideoId != dataset["video_id"][indexDataset]):
-            indexFrame = 0
+            indexFrame = 1
             cap = cv2.VideoCapture("videos/" + dataset["video_id"][indexDataset]
                                    + "/" + dataset["video_id"][indexDataset]
                                    + ".mp4")
@@ -476,7 +476,8 @@ print(datasets['val'])
 
 SELECTED_FOLD = 4
 
-if saveImages:
+# Erro ao copiar arquivos da segunda pasta
+if moveImages:
 
     # Divide entre treino e teste
     for i in range(len(dataset)):
