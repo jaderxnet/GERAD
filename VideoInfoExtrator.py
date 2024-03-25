@@ -23,8 +23,8 @@ from datetime import datetime
 
 argvs = sys.argv
 input
-inputFilePath = "videos.csv"
-outputFilePath = "processedVideos.csv"
+inputFilePath = "videoTeste.csv"
+outputFilePath = "processedTest.csv"
 
 if (argvs != None and len(argvs) > 0):
     for arg in argvs:
