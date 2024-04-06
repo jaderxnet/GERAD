@@ -16,6 +16,10 @@ from sklearn.model_selection import GroupKFold
 
 
 class NpEncoder(json.JSONEncoder):
+    '''
+        Class To encoder json files 
+    '''
+
     def default(self, obj):
         if isinstance(obj, np.integer):
             return int(obj)
@@ -27,6 +31,10 @@ class NpEncoder(json.JSONEncoder):
 
 
 class NpDecorder(json.JSONDecoder):
+    '''
+        Class To decoder json files 
+    '''
+
     def default(self, obj):
         if isinstance(obj, int):
             return np.integer(obj)
@@ -40,6 +48,9 @@ class NpDecorder(json.JSONDecoder):
 # https://www.kaggle.com/code/remekkinas/yolox-training-pipeline-cots-dataset-lb-0-507/notebook
 
 class CocoConverter:
+    '''
+        Class to converter a existent full boddy dataset in Coco keypoints dataset format like. 
+    '''
 
     def __init__(self, year, version, description, contributor, url, date_created, lic_id, lic_url, lic_name):
         self.annotion_id = 1
@@ -228,7 +239,7 @@ class CocoConverter:
         print(points)
 
         # to read the image stored in the working directory
-        data = image.imread(f"{path}/{video_id}/{frame}.jpg")
+        data = image.imread(f"{path}/{video_id}/img-{frame:06}.jpg")
 
         # to draw a line from (200,300) to (500,100)
         count = 0
@@ -449,33 +460,33 @@ if __name__ == '__main__':
     print(skeletons_train.shape)
     print(skeletons_train[442])
     """
-    test_df = pd.read_csv(
-        '/Users/jaderxnet/Documents/GitHub/brace/annotations/sequences_test.csv')
-    test_df = df_[df_.uid.isin(test_df.uid)]
+    train_df = pd.read_csv(
+        '/Users/jaderxnet/Documents/GitHub/brace/annotations/sequences_train.csv')
+    train_df = df_[df_.uid.isin(train_df.uid)]
 
-    brace_test = BraceDataset(sequences_path_, test_df)
+    brace_train = BraceDataset(sequences_path_, train_df)
     print(
-        f'Loaded BRACE test set! We got {len(brace_test)} testing sequences')
-    skeletons_test, metadata_test = brace_test.__getitem__(0)
+        f'Loaded BRACE test set! We got {len(brace_train)} testing sequences')
+    # skeletons_test, metadata_test = brace_train.__getitem__(0)
     # print(metadata_test)
     # print(skeletons_test.shape)
     # print(skeletons_test[442])
     # print(test_df)
     # print(brace_test.map_annotations["QwlEcwZiPaE"].keys())
     # 2 - Inflate one dataframe from each item from Brace
-    id = 6388
-    for key in brace_test.map_annotations["J81VYjZvg80"][id].keys():
+    """id = 6388
+    for key in brace_train.map_annotations["J81VYjZvg80"][id].keys():
         print(key)
-        print(brace_test.map_annotations["J81VYjZvg80"]
+        print(brace_train.map_annotations["J81VYjZvg80"]
               [id][key])
-    CocoConverter.plot_image_anotation("/Users/jaderxnet/Documents/GitHub/GERAD/dataset/images", "J81VYjZvg80",
-                                       id, brace_test.map_annotations["J81VYjZvg80"][id]["keypoints"])
-    #
+    CocoConverter.plot_image_anotation("/Users/jaderxnet/Documents/GitHub/datasetBrace/images", "J81VYjZvg80",
+                                       id, brace_train.map_annotations["J81VYjZvg80"][id]["keypoints"])
+    #"""
 
     today = datetime.datetime.now()
     coco_train_from_brace = CocoConverter(
-        "2024", "Coco Train From Brace Dataset", "Brace", today.strftime("%x"), "Test", "Test", "Test", "Test", "Test")
-    coco_json_file = coco_train_from_brace.build(brace_test.map_annotations)
+        "2024", "Coco Train From Brace Dataset", "Brace", today.strftime("%x"), "Train", "Train", "Train", "Train", "Train")
+    coco_json_file = coco_train_from_brace.build(brace_train.map_annotations)
     # print(coco_json_file)
     # coco_train_from_brace.build(df)
     # 3 - Save CocoDataset file
@@ -495,5 +506,5 @@ if __name__ == '__main__':
     DATASET_PATH = '/images'
 
     CocoConverter.save_annot_json(coco_json_file,
-                                  f"{HOME_DIR}{DATASET_PATH}/annotations/test.json")
+                                  f"{HOME_DIR}{DATASET_PATH}/annotations/train2017.json")
     # 4 - Test CocoDataset file
