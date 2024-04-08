@@ -1,15 +1,18 @@
 '''
-Create Python class to process each video  in processedVideos.csv
-1 - Read csv and select the last no processed video;
+Create Python class to manage video process for each 
+video  in processedVideos.csv based in:
+1 - Read input csv and select the last no processed video;
 2 - Change video status to Processing;
-3 - Download video in a folder with the id name;
-4 - Read each frame;
-5 - Apply 2 types of Neural Networks in each frame
+3 - Use the class ManagerSingleton to processing each video control; 
+4 - Use class VideoSplitImage to download video in a folder with the video id name;
+5 - Change class VideoSplitImage to Read each frame;
+6 - Create class NeuralNetwork to manage diferents Neural Networks
+7 - Apply 2 types of Neural Networks in each frame of video
     A - Media Pipe
     B - Yolo8 
-
-6 - Calculate the difference betwen inferences
-7 - Save a file by video with all the inferences frames
+8 - Create class CompareKeypoints to use diferents wheys to calculate keypoints
+9 - Calculate the difference betwen inferences
+10 - Save a file output by video with all the inferences frames
     A - Youtube ID
     B - Duration
     V - FPS
@@ -24,14 +27,13 @@ Create Python class to process each video  in processedVideos.csv
     E - Media of Normalized Euclidian distance sum multiply by visivle product
     F - Media of Normalized Euclidian distance media
     G - Media of Normalized Euclidian distance multiply by visivle product media
-    H - Media of EndPoint Error (EPE) - Pixel Euclidian distance media
-    
-7 - Save a file with sequences:
+    H - Media of EndPoint Error (EPE) - Pixel Euclidian distance media    
+11 - Save a file with sequences:
     A - Initial and final frame 
     B - Media Calculated difference ;
     C - Difference threshold;
     D - LOW or HI
-6 - Save a picture in the first frame by sequence;
+12 - Save a picture in the first frame by sequence;
 '''
 
 from ultralytics import YOLO
