@@ -13,39 +13,10 @@ import shutil
 from torch.utils.data import Subset
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GroupKFold
-
-
-class NpEncoder(json.JSONEncoder):
-    '''
-        Class To encoder json files 
-    '''
-
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        if isinstance(obj, np.floating):
-            return float(obj)
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return super(NpEncoder, self).default(obj)
-
-
-class NpDecorder(json.JSONDecoder):
-    '''
-        Class To decoder json files 
-    '''
-
-    def default(self, obj):
-        if isinstance(obj, int):
-            return np.integer(obj)
-        if isinstance(obj, float):
-            return np.floating(obj)
-        if isinstance(obj, list):
-            return np.ndarray(obj)
-        return super(NpDecorder, self)
-
+from coder import NpEncoder
 
 # https://www.kaggle.com/code/remekkinas/yolox-training-pipeline-cots-dataset-lb-0-507/notebook
+
 
 class CocoConverter:
     '''

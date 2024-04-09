@@ -79,6 +79,9 @@ class VideoProcessorSingleton(metaclass=ManagerSingleton):
     def printAllStatus(self):
         print(self.currentStatusItemsList)
 
+    def filterBy(self, status):
+        return self.currentStatusItemsList == status
+
 
 if __name__ == '__main__':
     statusLista = ["Ready", "Ready", "Ready", "Ready"]
