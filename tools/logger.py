@@ -4,7 +4,11 @@ class Logger:
         self.inputLogFile = inputLogFile
         self.printOption = printOption
 
-    def print(self, *args):
+    def print(self, *args, end=''):
         if (self.printOption):
             for arg in args:
-                print(arg)
+                print(arg, end)
+
+    def printError(self, *args):
+        for arg in args:
+            print(arg)

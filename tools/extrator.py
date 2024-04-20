@@ -21,6 +21,52 @@ import pandas as pd
 from youtube_dl import YoutubeDL
 from datetime import datetime
 from tqdm import tqdm
+from enum import Enum
+
+
+class OptionsVideoDownload(Enum):
+    DOWNLOAD_OPTION = 1
+    BRACE_OPTION = 2
+
+
+class DownloadYoutube:
+
+    def __init__(self, optionEnum, download=False, outputVideoPath="videos"):
+        self.optionEnum = optionEnum
+        self.download = download
+        self.outputVideoPath = outputVideoPath
+        self.setOption()
+
+    def setOption(self):
+        if (self.optionEnum.value == 1):
+            self.option = {
+                'format': 'bestvideo[ext=mp4]',
+                # This will select the specific resolution typed here
+                # "format": "mp4[height=1080]",
+                'no_check_certificate': True,
+                # "%(id)s/%(id)s-%(title)s.%(ext)s"
+                "outtmpl": f"{self.outputVideoPath}/%(id)s/%(id)s.%(ext)s"
+            }
+        elif (self.optionEnum.value == 2):
+            self.option = {
+                # 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
+                # "format": "mp4[height=1080]",
+                "format": "bestvideo[ext=mp4]",
+                "continue": True,
+                'noplaylist': True,
+                "outtmpl": f"{self.outputVideoPath}/%(id)s/%(id)s-%(title)s.%(ext)s"
+            }
+
+    def getInfo(self, url):
+        with YoutubeDL(self.option) as ydl:
+            ydl._ies = [ydl.get_info_extractor('Youtube')]
+            youtubeInfoDictionary = ydl.extract_info(
+                url, download=False)
+            return youtubeInfoDictionary
+
+    def getDownload(self, url):
+        with YoutubeDL(self.option) as ydl:
+            return ydl.download(url)
 
 
 class VideoInfoExtrator:

@@ -79,9 +79,10 @@ class VideoProcessorSingleton(metaclass=ManagerSingleton):
     def printAllStatus(self):
         print(self.currentStatusItemsList)
 
-    def filterBy(self, status):
-        return self.currentStatusItemsList == status
-
+    def getIndexBy(self, status):
+        filtered = self.currentStatusItemsList == status
+        indexesProcessing = self.currentStatusItemsList.index[filtered]
+        return indexesProcessing
 
 if __name__ == '__main__':
     statusLista = ["Ready", "Ready", "Ready", "Ready"]

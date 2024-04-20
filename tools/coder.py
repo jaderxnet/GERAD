@@ -1,3 +1,6 @@
+import json
+
+
 class NpEncoder(json.JSONEncoder):
     '''
         Class To encoder json files 
