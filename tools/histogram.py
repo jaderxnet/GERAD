@@ -1,49 +1,86 @@
-import numpy as np
+from logger import Logger
+from singleton import VideoProcessorSingleton
+from coder import NpEncoder
 from matplotlib import colors
-import matplotlib.pyplot as plt
+import logging
 import json
 import pandas as pd
-# videos/Br8xTiOqvdA
-# videos/cveTsmWApp8
-# videos/FW-RjHXbyq8
-# videos/xX0ZWd8KfbM
-
-print_all = False
-
-inputFilePath = "ListsInfo/processedFrevo.csv"
-videosTable = pd.read_csv(inputFilePath, sep=';')
-filtered = videosTable["status"] == "Processing"
-
-if print_all:
-    print("Lendo: ", inputFilePath)
-    print(inputFilePath)
-    print("Table: ", len(videosTable))
-    print("Filtered: ", len(filtered))
+import numpy as np
+import matplotlib.pyplot as plt
 
 
-indexesProcessing = videosTable.index[filtered]
-if (len(indexesProcessing) > 0):
-    print("PROCESSING THE INDEX VIDEO: ", indexesProcessing.tolist()[0])
-else:
-    filtered = videosTable["status"] == "Processed"
-    indexesToProcess = videosTable.index[filtered]
-    if print_all:
-        print("Filtered: ", len(filtered))
-        print("indexesToProcess: ", len(indexesToProcess))
-    if (len(indexesToProcess) < 1):
-        print("ALL VIDEOS UNPROCESSED!")
+class HistogramProcess:
+    def __init__(self, inputFilePath, outPutFolder, printOption=True) -> None:
+        self.inputFilePath = inputFilePath
+        self.outPutFolder = outPutFolder
+        self.printOption = printOption
+        self.logger = Logger(printOption=printOption)
+        logging.basicConfig(filename=f'{outPutFolder}/histogram.log', filemode='w',
+                            format='%(name)s - %(levelname)s - %(message)s')
+        logging.warning('This will get logged to a file')
+
+    def log(self, *string, end=""):
+        logging.warning(string)
+        return self.logger.print(string, end)
+
+    def logError(self, *string):
+        logging.error(string, exc_info=True)
+        return self.logger.printError(string)
+
+    def readInput(self):
+
+        self.videosTable = pd.read_csv(self.inputFilePath, sep=';')
+        self.logger.print("Lendo: ", self.inputFilePath)
+        self.logger.print("Shape: ", self.videosTable.shape)
+
+    def getIndexByStatus(self, status):
+        singleton = VideoProcessorSingleton(self.videosTable["status"])
+        indexesStatus = singleton.getIndexBy(status)
+        self.logger.print("Total Size: ", len(self.videosTable))
+        self.logger.print("Filtered " + status + ": ", len(indexesStatus))
+        return indexesStatus
+
+    def changeStatus(self, index, new_status):
+        self.videosTable.at[index, 'status'] = new_status
+
+    def updateCSVInput(self):
+        self.videosTable.to_csv(self.inputFilePath, index=False, sep=';')
+
+    def saveOutputFile(self, dictionary, id, text):
+        # os.mkdir(outputFilePath)
+        outputFilePath = self.outPutFolder + "/" + id + "/" + id+".txt"
+        file = open(outputFilePath, "w")
+        file.write(json.dumps(dictionary, indent=4, cls=NpEncoder))
+        file.close()
+
+    def getItemByIndex(self, index):
+        return self.videosTable.loc[index]
+
+
+if __name__ == '__main__':
+    inputFilePath = "ListsInfo/processedFrevo.csv"
+    videosFolder = "videoTest"
+    histogramProcess = HistogramProcess(
+        inputFilePath, videosFolder, True)
+    histogramProcess.readInput()
+    idexexStatusProcessing = histogramProcess.getIndexByStatus("Processing")
+    idexexStatusProcessed = histogramProcess.getIndexByStatus("Processed")
+    if (len(idexexStatusProcessing) > 0):
+        print("PROCESSING THE INDEX VIDEO: ",
+              idexexStatusProcessing.tolist()[0])
+    elif (len(idexexStatusProcessed) <= 0):
+        print("ALL VIDEOS PROCESSED!")
     else:
-        for indexToProcess in indexesToProcess.tolist():
-            selectedVideo = videosTable.loc[indexToProcess]
-            if print_all:
-                print("Index to update: ", indexToProcess)
-                print("Updated Table: ", videosTable)
-                print("Selected Video: ", selectedVideo)
+        for indexProcessed in idexexStatusProcessed.tolist():
+            selectedVideo = histogramProcess.getItemByIndex(indexProcessed)
+            histogramProcess.log("Index to update: ", indexProcessed)
+            histogramProcess.log("Updated Table: ", histogramProcess)
+            histogramProcess.log("Selected Video: ", selectedVideo)
 
-            path = "videoTest/"
             folder = file_name = id = selectedVideo['id']
-            f = open(path + folder + "/" + file_name+".txt", "r")
-            text = f.read().replace('\n', '')
+            outputFile = open(histogramProcess.outPutFolder + "/" +
+                              folder + "/" + file_name+".txt", "r")
+            text = outputFile.read().replace('\n', '')
 
             y = json.loads(text)
 
@@ -212,7 +249,7 @@ else:
                 plt.title(file_name)
                 plt.bar(range(len(valores)), valores, color=cols)
                 if (save):
-                    plt.savefig(path + folder + "/" + label +
+                    plt.savefig(histogramProcess.outPutFolder + "/" + folder + "/" + label +
                                 "_" + id+'.png', dpi=200)
                 if (show):
                     plt.show()

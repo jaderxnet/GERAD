@@ -8,6 +8,7 @@ from coder import NpEncoder
 import pandas as pd
 import json
 import numpy as np
+import logging
 
 
 class VideosProcess:
@@ -17,11 +18,16 @@ class VideosProcess:
         self.download_video = download_video
         self.saveFile = saveFile
         self.logger = Logger(printOption=printOption)
+        logging.basicConfig(filename='videoTest/app.log', filemode='w',
+                            format='%(name)s - %(levelname)s - %(message)s')
+        logging.warning('This will get logged to a file')
 
     def log(self, *string, end=""):
+        logging.warning(string)
         return self.logger.print(string, end)
 
     def logError(self, *string):
+        logging.error(string, exc_info=True)
         return self.logger.printError(string)
 
     def readInput(self):
@@ -86,7 +92,7 @@ if __name__ == '__main__':
             processControll.log('Download Concluído: ',
                                 selectedVideo['id'], " - ", result)
             videoManipulation = VideoManipulation(
-                videosFolder, videosFolder, selectedVideo["id"], selectedVideo["width"], selectedVideo["height"])
+                videosFolder, videosFolder, selectedVideo["id"], selectedVideo["width"], selectedVideo["height"], True, True)
             if (videoManipulation.isOpened() == False):
                 processControll.logError(
                     "Error opening video stream or file: " + selectedVideo["id"])
@@ -107,6 +113,8 @@ if __name__ == '__main__':
                 # (EPE)EndPoint Error (EPE) - Pixel Euclidian distance media
                 metricEPE = Metric("EPE", MetricTipe.EPE)
                 dictionary[selectedVideo["id"]]["frames"] = {}
+                videoManipulation.writeVideo()
+                processControll.log("Write Video")
                 processControll.log(dictionary)
                 totalCount = 0
                 print_count = 0
@@ -122,6 +130,7 @@ if __name__ == '__main__':
                     else:
                         videoManipulation.display("frame", frame)
                         frames_count += 1
+                        frame_information = "| Frame" + f'{frames_count:06}'
                         # frames have the dictionary with frame id
                         dictionary[selectedVideo["id"]
                                    ]["frames"][frames_count] = {}
@@ -138,6 +147,8 @@ if __name__ == '__main__':
                                    ]["frames"][frames_count]["YOLO"]["neural_network_file"] = yolo.model
                         dictionary[selectedVideo["id"]
                                    ]["frames"][frames_count]["YOLO"]["poses_count"] = quantidadePosesYolo
+                        frame_information = frame_information + \
+                            "| YOLO: " + f'{quantidadePosesYolo:02}'
                         if quantidadePosesYolo > 0:
                             results_json = yoloPredictResults[0].tojson(
                                 normalize=True)
@@ -244,30 +255,31 @@ if __name__ == '__main__':
                                            ]["frames"][frames_count]["EPE"] = metricEPE.minor_distance
                                 metricEPE.increaseValue()
                                 totalCount += 1
-                            frame_information = "| Frame" + f'{frames_count:06}' + \
-                                "| YOLO: " + f'{quantidadePosesYolo:02}' + \
-                                "| Mediapipe: " + f'{quantidadePosesMediapipe:02}' + \
-                                "| EPDNVP INDEX : " + f'{metricEPDNVP.index:02}' + \
-                                " : " + f'{metricEPDNVP.minor_distance:06.15f}' + \
-                                "| EPDNMVP INDEX : " + f'{metricEPDNMVP.index:02}' + \
-                                " : " + f'{metricEPDNMVP.minor_distance:06.15f}' + '\n' +\
-                                "| EPDNM INDEX : " + f'{metricEPDNM.index:02}' + \
-                                " : " + f'{metricEPDNM.minor_distance:06.15f}' +  \
-                                "| EPE INDEX : " + f'{metricEPE.index:02}' + \
-                                " : " + f'{metricEPE.minor_distance:06.15f}'
-                            if (totalCount > 0):
                                 frame_information = frame_information + \
-                                    "| Media EPDNVP: " + f'{metricEPDNVP.metricValue/totalCount:06.15f}' + '\n' +\
-                                    "| Media EPDNMVP: " + f'{metricEPDNMVP.metricValue/totalCount:06.15f}' + \
-                                    "| Media EPDNM: " + f'{metricEPDNM.metricValue/totalCount:06.15f}' + \
-                                    "| Media EPE: " + \
-                                    f'{metricEPE.metricValue/totalCount:06.15f}'
-                            videoManipulation.putTextInFrame(
-                                frame_information, frame)
-                            videoManipulation.putTextInFrame(
-                                frame_information, yoloAnnotatedImage)
+                                    "| Mediapipe: " + f'{quantidadePosesMediapipe:02}' + \
+                                    "| EPDNVP INDEX : " + f'{metricEPDNVP.index:02}' + \
+                                    " : " + f'{metricEPDNVP.minor_distance:06.15f}' + \
+                                    "| EPDNMVP INDEX : " + f'{metricEPDNMVP.index:02}' + \
+                                    " : " + f'{metricEPDNMVP.minor_distance:06.15f}' + '\n' +\
+                                    "| EPDNM INDEX : " + f'{metricEPDNM.index:02}' + \
+                                    " : " + f'{metricEPDNM.minor_distance:06.15f}' +  \
+                                    "| EPE INDEX : " + f'{metricEPE.index:02}' + \
+                                    " : " + \
+                                    f'{metricEPE.minor_distance:06.15f}'
+                                if (totalCount > 0):
+                                    frame_information = frame_information + \
+                                        "| Media EPDNVP: " + f'{metricEPDNVP.metricValue/totalCount:06.15f}' + '\n' +\
+                                        "| Media EPDNMVP: " + f'{metricEPDNMVP.metricValue/totalCount:06.15f}' + \
+                                        "| Media EPDNM: " + f'{metricEPDNM.metricValue/totalCount:06.15f}' + \
+                                        "| Media EPE: " + \
+                                        f'{metricEPE.metricValue/totalCount:06.15f}'
                             videoManipulation.putTextInFrame(
                                 frame_information, mediaPipeAnnotatedImageRGB)
+                        videoManipulation.putTextInFrame(
+                            frame_information, yoloAnnotatedImage)
+                        videoManipulation.putTextInFrame(
+                            frame_information, frame)
+
                         processControll.log(
                             # "\033[K",
                             frame_information, end="\r")
@@ -280,11 +292,11 @@ if __name__ == '__main__':
                         else:
                             if quantidadePosesYolo > 0:
                                 videoManipulation.display(
-                                    "Fame", yoloAnnotatedImage)
+                                    "Frame", yoloAnnotatedImage)
                                 videoManipulation.saveInVideo(
                                     yoloAnnotatedImage)
                             else:
-                                videoManipulation.display("Fame", frame)
+                                videoManipulation.display("Frame", frame)
                                 videoManipulation.saveInVideo(frame)
 
                         if videoManipulation.verifyVideoStop():
