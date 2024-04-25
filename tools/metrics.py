@@ -83,3 +83,7 @@ class Metric:
         for coord in relative_coords:
             result.append(coord[1:3] * self.screenDimentions)
         return result
+
+    def resetMinorDistance(self):
+        self.minor_distance = 100000
+        self.index = -1
