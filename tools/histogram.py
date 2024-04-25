@@ -1,7 +1,9 @@
 from logger import Logger
 from singleton import VideoProcessorSingleton
 from coder import NpEncoder
+from metrics import MetricTipe
 from matplotlib import colors
+from enum import Enum
 import logging
 import json
 import pandas as pd
@@ -56,6 +58,136 @@ class HistogramProcess:
     def getItemByIndex(self, index):
         return self.videosTable.loc[index]
 
+    def plot_grph(self, valores, new_map, show, save, file_name, label):
+        valuesScala = valores / float(max(valores))
+        # indi = 0
+
+        # my_cmap = plt.get_cmap("viridis")
+
+        # print('Max: ' + str(max(valores)))
+
+        cols = new_map(valuesScala)
+        plot = plt.scatter(valores, valores, c=valores, cmap=new_map)
+        plt.clf()
+        plt.colorbar(plot)
+        plt.xlabel('frames/s')
+        plt.ylabel(label)
+        plt.title(file_name)
+        plt.bar(range(len(valores)), valores, color=cols)
+        if (save):
+            plt.savefig(self.outPutFolder + "/" + folder + "/" + label +
+                        "_" + id+'.png', dpi=200)
+        if (show):
+            plt.show()
+
+
+class Histogram:
+    def __init__(self, idVideo, histogramTipe) -> None:
+        self.idVideo = idVideo
+        self.histogramTipe = histogramTipe
+        self.frames = []
+        self.valueList = []
+        self.threshold = []
+
+    def valuesNPArray(self):
+        if (self.histogramTipe == MetricTipe.EPE):
+            print("AQUI: ", self.idVideo, self.histogramTipe, self.valueList)
+        self.valueList = np.array(self.valueList)
+
+
+class ColorDictType(Enum):
+    DOWN = 1
+    CENTER = 2
+
+
+class ColorMap:
+    def __init__(self, colorDictionaryType) -> None:
+        self.colorDictionaryType = colorDictionaryType
+
+    @staticmethod
+    def scale(x):
+        return np.interp(x=x, xp=[0, 255], fp=[0, 1])
+
+    def getMap(self):
+        if (self.colorDictionaryType == ColorDictType.DOWN):
+            cdict = {
+                'red': ((0.0, ColorMap.scale(0), ColorMap.scale(0)),
+                        (1/10*1, ColorMap.scale(0), ColorMap.scale(0)),
+                        (1/10*2, ColorMap.scale(210), ColorMap.scale(210)),
+                        (1/10*3, ColorMap.scale(210), ColorMap.scale(210)),
+                        (1/10*4, ColorMap.scale(210), ColorMap.scale(210)),
+                        (1/10*5, ColorMap.scale(210), ColorMap.scale(210)),
+                        (1/10*6, ColorMap.scale(210), ColorMap.scale(210)),
+                        (1/10*7, ColorMap.scale(210), ColorMap.scale(210)),
+                        (1/10*8, ColorMap.scale(210), ColorMap.scale(210)),
+                        (1/10*9, ColorMap.scale(210), ColorMap.scale(210)),
+                        (1.0, ColorMap.scale(210), ColorMap.scale(210))),
+                'green': ((0.0, ColorMap.scale(220), ColorMap.scale(220)),
+                          (1/10*1, ColorMap.scale(0), ColorMap.scale(0)),
+                          (1/10*2, ColorMap.scale(0), ColorMap.scale(0)),
+                          (1/10*3, ColorMap.scale(0), ColorMap.scale(0)),
+                          (1/10*4, ColorMap.scale(0), ColorMap.scale(0)),
+                          (1/10*5, ColorMap.scale(0), ColorMap.scale(0)),
+                          (1/10*6, ColorMap.scale(0), ColorMap.scale(0)),
+                          (1/10*7, ColorMap.scale(0), ColorMap.scale(0)),
+                          (1/10*8, ColorMap.scale(0), ColorMap.scale(0)),
+                          (1/10*9, ColorMap.scale(0), ColorMap.scale(0)),
+                          (1.0, ColorMap.scale(0), ColorMap.scale(0))),
+                'blue': ((0.0, ColorMap.scale(0), ColorMap.scale(0)),
+                         (1/10*1, ColorMap.scale(255), ColorMap.scale(255)),
+                         (1/10*2, ColorMap.scale(0), ColorMap.scale(0)),
+                         (1/10*3, ColorMap.scale(0), ColorMap.scale(0)),
+                         (1/10*4, ColorMap.scale(0), ColorMap.scale(0)),
+                         (1/10*5, ColorMap.scale(0), ColorMap.scale(0)),
+                         (1/10*6, ColorMap.scale(0), ColorMap.scale(0)),
+                         (1/10*7, ColorMap.scale(0), ColorMap.scale(0)),
+                         (1/10*8, ColorMap.scale(0), ColorMap.scale(0)),
+                         (1/10*9, ColorMap.scale(0), ColorMap.scale(0)),
+                         (1.0, ColorMap.scale(0), ColorMap.scale(0))),
+            }
+            new_cmap = colors.LinearSegmentedColormap(
+                'new_cmap', segmentdata=cdict)
+            return new_cmap
+        if (self.colorDictionaryType == ColorDictType.CENTER):
+            cdict2 = {
+                'red': ((0.0, ColorMap.scale(210), ColorMap.scale(210)),
+                        (1/10*1, ColorMap.scale(210), ColorMap.scale(210)),
+                        (1/10*2, ColorMap.scale(210), ColorMap.scale(210)),
+                        (1/10*3, ColorMap.scale(210), ColorMap.scale(210)),
+                        (1/10*4, ColorMap.scale(210), ColorMap.scale(210)),
+                        (1/10*5, ColorMap.scale(210), ColorMap.scale(210)),
+                        (1/10*6, ColorMap.scale(0), ColorMap.scale(0)),
+                        (1/10*7, ColorMap.scale(0), ColorMap.scale(0)),
+                        (1/10*8, ColorMap.scale(0), ColorMap.scale(0)),
+                        (1/10*9, ColorMap.scale(0), ColorMap.scale(0)),
+                        (1.0, ColorMap.scale(0), ColorMap.scale(0))),
+                'green': ((0.0, ColorMap.scale(0), ColorMap.scale(0)),
+                          (1/10*1, ColorMap.scale(0), ColorMap.scale(0)),
+                          (1/10*2, ColorMap.scale(0), ColorMap.scale(0)),
+                          (1/10*3, ColorMap.scale(0), ColorMap.scale(0)),
+                          (1/10*4, ColorMap.scale(0), ColorMap.scale(0)),
+                          (1/10*5, ColorMap.scale(0), ColorMap.scale(0)),
+                          (1/10*6, ColorMap.scale(220), ColorMap.scale(220)),
+                          (1/10*7, ColorMap.scale(220), ColorMap.scale(220)),
+                          (1/10*8, ColorMap.scale(220), ColorMap.scale(220)),
+                          (1/10*9, ColorMap.scale(220), ColorMap.scale(220)),
+                          (1.0, ColorMap.scale(220), ColorMap.scale(0))),
+                'blue': ((0.0, ColorMap.scale(0), ColorMap.scale(0)),
+                         (1/10*1, ColorMap.scale(0), ColorMap.scale(0)),
+                         (1/10*2, ColorMap.scale(0), ColorMap.scale(0)),
+                         (1/10*3, ColorMap.scale(0), ColorMap.scale(0)),
+                         (1/10*4, ColorMap.scale(0), ColorMap.scale(0)),
+                         (1/10*5, ColorMap.scale(0), ColorMap.scale(0)),
+                         (1/10*6, ColorMap.scale(0), ColorMap.scale(0)),
+                         (1/10*7, ColorMap.scale(0), ColorMap.scale(0)),
+                         (1/10*8, ColorMap.scale(0), ColorMap.scale(0)),
+                         (1/10*9, ColorMap.scale(0), ColorMap.scale(0)),
+                         (1.0, ColorMap.scale(0), ColorMap.scale(0))),
+            }
+            new_cmap2 = colors.LinearSegmentedColormap(
+                'new_cmap', segmentdata=cdict2)
+            return new_cmap2
+
 
 if __name__ == '__main__':
     inputFilePath = "ListsInfo/processedFrevo.csv"
@@ -83,56 +215,56 @@ if __name__ == '__main__':
             text = outputFile.read().replace('\n', '')
 
             y = json.loads(text)
-
-            indices = []
-            valores_EPDNVP = []
-            valores_EPDNMVP = []
-            valores_EPDNM = []
-            valores_EPE = []
-            valores_EPDNVP_Discordancia = []
+            metrics = {}
+            metrics["EPDNVP"] = Histogram(id, MetricTipe.EPDNVP)
+            metrics["EPDNMVP"] = Histogram(id, MetricTipe.EPDNMVP)
+            metrics["EPDNM"] = Histogram(id, MetricTipe.EPDNM)
+            metrics["EPE"] = Histogram(id, MetricTipe.EPE)
+            metrics["EPDNVP Discord"] = Histogram(id, MetricTipe.EPDNVP)
             # the result is a Python dictionary:
             # print(y[file_name]["EPDNVP"])
             total_frame = y[id]["frames_count"]
             print("Total: ", id)
             for x in y[id]["frames"].keys():
-                indices.append(x)
+                for metric in metrics.values():
+                    metric.frames.append(x)
                 if (y[id]["frames"][x]["YOLO"]["poses_count"] <= 0 and
                         y[id]["frames"][x]["mediapipe"]["poses_count"] <= 0):
-                    valores_EPDNVP_Discordancia.append(0)
+                    metrics["EPDNVP Discord"].valueList.append(0)
                 else:
                     if (y[id]["frames"][x]["YOLO"]["poses_count"] == 0 or
                             y[id]["frames"][x]["mediapipe"]["poses_count"] == 0):
-                        valores_EPDNVP_Discordancia.append(5)
+                        metrics["EPDNVP Discord"].valueList.append(5)
                     else:
                         if (y[id]["frames"][x]["EPDNVP"] >= 1):
-                            valores_EPDNVP_Discordancia.append(
+                            metrics["EPDNVP Discord"].valueList.append(
                                 y[id]["frames"][x]["EPDNVP"])
                         else:
-                            valores_EPDNVP_Discordancia.append(0)
+                            metrics["EPDNVP Discord"].valueList.append(0)
                 if ("EPDNVP" in y[id]["frames"][x]):
                     # print(y[id]["frames"][x]["EPDNVP"])
-                    valores_EPDNVP.append(
+                    metrics["EPDNVP"].valueList.append(
                         y[id]["frames"][x]["EPDNVP"])
                 else:
-                    valores_EPDNVP.append(0)
+                    metrics["EPDNVP"].valueList.append(0)
                 if ("EPDNMVP" in y[id]["frames"][x]):
                     # print(y[id]["frames"][x]["EPDNVP"])
-                    valores_EPDNMVP.append(
+                    metrics["EPDNMVP"].valueList.append(
                         y[id]["frames"][x]["EPDNMVP"])
                 else:
-                    valores_EPDNMVP.append(0)
+                    metrics["EPDNMVP"].valueList.append(0)
                 if ("EPDNM" in y[id]["frames"][x]):
                     # print(y[id]["frames"][x]["EPDNM"])
-                    valores_EPDNM.append(
+                    metrics["EPDNM"].valueList.append(
                         y[id]["frames"][x]["EPDNM"])
                 else:
-                    valores_EPDNM.append(0)
+                    metrics["EPDNM"].valueList.append(0)
                 if ("EPE" in y[id]["frames"][x]):
                     # print(y[id]["frames"][x]["EPDNM"])
-                    valores_EPE.append(
+                    metrics["EPE"].valueList.append(
                         y[id]["frames"][x]["EPE"])
                 else:
-                    valores_EPE.append(0)
+                    metrics["EPE"].valueList.append(0)
             '''
             indi = 0
             for z in valores:
@@ -140,11 +272,11 @@ if __name__ == '__main__':
                     print("V ", indi, z)
                 indi += 1
             '''
-            valores_EPDNVP = np.array(valores_EPDNVP)
-            valores_EPDNMVP = np.array(valores_EPDNMVP)
-            valores_EPDNM = np.array(valores_EPDNM)
-            valores_EPE = np.array(valores_EPE)
-            valores_EPDNVP_Discordancia = np.array(valores_EPDNVP_Discordancia)
+            metrics["EPDNVP"].valuesNPArray()
+            metrics["EPDNMVP"].valuesNPArray()
+            metrics["EPDNM"].valuesNPArray()
+            metrics["EPE"].valuesNPArray()
+            metrics["EPDNVP Discord"].valuesNPArray()
             '''
             indi = 0
             for z in valores:
@@ -153,122 +285,26 @@ if __name__ == '__main__':
                 indi += 1
             '''
 
-            def inter_from_256(x):
-                return np.interp(x=x, xp=[0, 255], fp=[0, 1])
-
-            cdict = {
-                'red': ((0.0, inter_from_256(0), inter_from_256(0)),
-                        (1/10*1, inter_from_256(0), inter_from_256(0)),
-                        (1/10*2, inter_from_256(210), inter_from_256(210)),
-                        (1/10*3, inter_from_256(210), inter_from_256(210)),
-                        (1/10*4, inter_from_256(210), inter_from_256(210)),
-                        (1/10*5, inter_from_256(210), inter_from_256(210)),
-                        (1/10*6, inter_from_256(210), inter_from_256(210)),
-                        (1/10*7, inter_from_256(210), inter_from_256(210)),
-                        (1/10*8, inter_from_256(210), inter_from_256(210)),
-                        (1/10*9, inter_from_256(210), inter_from_256(210)),
-                        (1.0, inter_from_256(210), inter_from_256(210))),
-                'green': ((0.0, inter_from_256(220), inter_from_256(220)),
-                          (1/10*1, inter_from_256(0), inter_from_256(0)),
-                          (1/10*2, inter_from_256(0), inter_from_256(0)),
-                          (1/10*3, inter_from_256(0), inter_from_256(0)),
-                          (1/10*4, inter_from_256(0), inter_from_256(0)),
-                          (1/10*5, inter_from_256(0), inter_from_256(0)),
-                          (1/10*6, inter_from_256(0), inter_from_256(0)),
-                          (1/10*7, inter_from_256(0), inter_from_256(0)),
-                          (1/10*8, inter_from_256(0), inter_from_256(0)),
-                          (1/10*9, inter_from_256(0), inter_from_256(0)),
-                          (1.0, inter_from_256(0), inter_from_256(0))),
-                'blue': ((0.0, inter_from_256(0), inter_from_256(0)),
-                         (1/10*1, inter_from_256(255), inter_from_256(255)),
-                         (1/10*2, inter_from_256(0), inter_from_256(0)),
-                         (1/10*3, inter_from_256(0), inter_from_256(0)),
-                         (1/10*4, inter_from_256(0), inter_from_256(0)),
-                         (1/10*5, inter_from_256(0), inter_from_256(0)),
-                         (1/10*6, inter_from_256(0), inter_from_256(0)),
-                         (1/10*7, inter_from_256(0), inter_from_256(0)),
-                         (1/10*8, inter_from_256(0), inter_from_256(0)),
-                         (1/10*9, inter_from_256(0), inter_from_256(0)),
-                         (1.0, inter_from_256(0), inter_from_256(0))),
-            }
-            new_cmap = colors.LinearSegmentedColormap(
-                'new_cmap', segmentdata=cdict)
-
-            cdict2 = {
-                'red': ((0.0, inter_from_256(210), inter_from_256(210)),
-                        (1/10*1, inter_from_256(210), inter_from_256(210)),
-                        (1/10*2, inter_from_256(210), inter_from_256(210)),
-                        (1/10*3, inter_from_256(210), inter_from_256(210)),
-                        (1/10*4, inter_from_256(210), inter_from_256(210)),
-                        (1/10*5, inter_from_256(210), inter_from_256(210)),
-                        (1/10*6, inter_from_256(0), inter_from_256(0)),
-                        (1/10*7, inter_from_256(0), inter_from_256(0)),
-                        (1/10*8, inter_from_256(0), inter_from_256(0)),
-                        (1/10*9, inter_from_256(0), inter_from_256(0)),
-                        (1.0, inter_from_256(0), inter_from_256(0))),
-                'green': ((0.0, inter_from_256(0), inter_from_256(0)),
-                          (1/10*1, inter_from_256(0), inter_from_256(0)),
-                          (1/10*2, inter_from_256(0), inter_from_256(0)),
-                          (1/10*3, inter_from_256(0), inter_from_256(0)),
-                          (1/10*4, inter_from_256(0), inter_from_256(0)),
-                          (1/10*5, inter_from_256(0), inter_from_256(0)),
-                          (1/10*6, inter_from_256(220), inter_from_256(220)),
-                          (1/10*7, inter_from_256(220), inter_from_256(220)),
-                          (1/10*8, inter_from_256(220), inter_from_256(220)),
-                          (1/10*9, inter_from_256(220), inter_from_256(220)),
-                          (1.0, inter_from_256(220), inter_from_256(0))),
-                'blue': ((0.0, inter_from_256(0), inter_from_256(0)),
-                         (1/10*1, inter_from_256(0), inter_from_256(0)),
-                         (1/10*2, inter_from_256(0), inter_from_256(0)),
-                         (1/10*3, inter_from_256(0), inter_from_256(0)),
-                         (1/10*4, inter_from_256(0), inter_from_256(0)),
-                         (1/10*5, inter_from_256(0), inter_from_256(0)),
-                         (1/10*6, inter_from_256(0), inter_from_256(0)),
-                         (1/10*7, inter_from_256(0), inter_from_256(0)),
-                         (1/10*8, inter_from_256(0), inter_from_256(0)),
-                         (1/10*9, inter_from_256(0), inter_from_256(0)),
-                         (1.0, inter_from_256(0), inter_from_256(0))),
-            }
-            new_cmap2 = colors.LinearSegmentedColormap(
-                'new_cmap', segmentdata=cdict2)
-
-            def plot_grph(valores, new_map, show, save, file_name, label):
-                map = valores / float(max(valores))
-                # indi = 0
-
-                # my_cmap = plt.get_cmap("viridis")
-
-                print('Max: ' + str(max(valores)))
-
-                cols = new_map(map)
-                plot = plt.scatter(valores, valores, c=valores, cmap=new_map)
-                plt.clf()
-                plt.colorbar(plot)
-                plt.xlabel('frames/s')
-                plt.ylabel(label)
-                plt.title(file_name)
-                plt.bar(range(len(valores)), valores, color=cols)
-                if (save):
-                    plt.savefig(histogramProcess.outPutFolder + "/" + folder + "/" + label +
-                                "_" + id+'.png', dpi=200)
-                if (show):
-                    plt.show()
-
             valores_Similar = []
-            for x in valores_EPDNVP:
+            for x in metrics["EPDNVP"].valueList:
                 if x <= 0 or x > 1:
                     valores_Similar.append(0)
                 else:
                     valores_Similar.append(1-x)
 
+            colorMap1 = ColorMap(ColorDictType.DOWN)
+            colorMap2 = ColorMap(ColorDictType.CENTER)
+
             # True, False, True
-            plot_grph(valores_EPDNVP, new_cmap, False,
-                      True, file_name, 'EPDNVP')
-            plot_grph(np.array(valores_Similar), new_cmap2,
-                      False, True, file_name, 'EPDNVP Similarity')
-            plot_grph(valores_EPDNVP_Discordancia, new_cmap,
-                      False, True, file_name, 'EPDNVP Discordance')
-            plot_grph(valores_EPDNMVP, new_cmap, False,
-                      True, file_name, 'EPDNMVP')
-            plot_grph(valores_EPDNM, new_cmap, False, True, file_name, 'EPDNM')
-            plot_grph(valores_EPE, new_cmap, False, True, file_name, 'EPE')
+            histogramProcess.plot_grph(metrics["EPDNVP"].valueList, colorMap1.getMap(), False,
+                                       True, file_name, 'EPDNVP')
+            histogramProcess.plot_grph(np.array(valores_Similar), colorMap2.getMap(),
+                                       False, True, file_name, 'EPDNVP Similarity')
+            histogramProcess.plot_grph(metrics["EPDNVP Discord"].valueList, colorMap1.getMap(),
+                                       False, True, file_name, 'EPDNVP Discordance')
+            histogramProcess.plot_grph(metrics["EPDNMVP"].valueList, colorMap1.getMap(), False,
+                                       True, file_name, 'EPDNMVP')
+            histogramProcess.plot_grph(metrics["EPDNM"].valueList, colorMap1.getMap(),
+                                       False, True, file_name, 'EPDNM')
+            histogramProcess.plot_grph(metrics["EPE"].valueList, colorMap1.getMap(),
+                                       False, True, file_name, 'EPE')
