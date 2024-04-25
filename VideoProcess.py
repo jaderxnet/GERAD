@@ -149,7 +149,7 @@ print_resume = True
 download_video = True
 display_frame = False
 
-inputFilePath = "processedVideos.csv"
+inputFilePath = "ListsInfo/processedFrevo.csv"
 videosTable = pd.read_csv(inputFilePath, sep=';')
 filtered = videosTable["status"] == "Processing"
 
@@ -197,8 +197,8 @@ else:
 
             # https://developers.google.com/mediapipe/solutions/vision/pose_landmarker/python
             # https://developers.google.com/mediapipe/solutions/vision/pose_landmarker/index#models
-            model_path_lite = '/Users/jaderxnet/Documents/GitHub/GERAD/neuralNetworks/mediapipe/pose_landmarker_lite.task'
-            model_path_Heavy = '/Users/jaderxnet/Documents/GitHub/GERAD/neuralNetworks/mediapipe/pose_landmarker_heavy.task'
+            model_path_lite = 'neuralNetworks/mediapipe/pose_landmarker_lite.task'
+            model_path_Heavy = 'neuralNetworks/mediapipe/pose_landmarker_heavy.task'
 
             BaseOptions = mp.tasks.BaseOptions
             PoseLandmarker = mp.tasks.vision.PoseLandmarker
@@ -221,7 +221,7 @@ else:
                                    + "/" + selectedVideo['id']
                                    + ".mp4")
 
-            outputFilePath = "/Users/jaderxnet/Documents/GitHub/GERAD/videos/" + \
+            outputFilePath = "videos/" + \
                 selectedVideo['id']
             file1 = None
             if save_file:

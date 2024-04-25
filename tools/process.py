@@ -2,29 +2,30 @@ from metrics import MetricTipe, Metric
 from video import VideoManipulation
 from neural import Yolo, MediaPipe, NeuralNetwork
 from extrator import OptionsVideoDownload, DownloadYoutube
-from logger import Logger
+from logger import Logger, PrintOption
 from singleton import VideoProcessorSingleton
 from coder import NpEncoder
 import pandas as pd
 import json
 import numpy as np
 import logging
+import datetime
 
 
 class VideosProcess:
-    def __init__(self, inputFile, outPutFolder, printOption=True, download_video=False, saveFile=False) -> None:
+    def __init__(self, inputFile, outPutFolder, printOption=PrintOption.ALL, download_video=False, saveFile=False) -> None:
         self.inputFile = inputFile
         self.outPutFolder = outPutFolder
         self.download_video = download_video
         self.saveFile = saveFile
         self.logger = Logger(printOption=printOption)
-        logging.basicConfig(filename='videoTest/app.log', filemode='w',
+        logging.basicConfig(filename=f'{outPutFolder}/app{datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}.log', filemode='w',
                             format='%(name)s - %(levelname)s - %(message)s')
         logging.warning('This will get logged to a file')
 
-    def log(self, *string, end=""):
+    def log(self, *string, end="", printOption=PrintOption.ALL):
         logging.warning(string)
-        return self.logger.print(string, end)
+        return self.logger.print(string, end, printOption=printOption)
 
     def logError(self, *string):
         logging.error(string, exc_info=True)
@@ -282,7 +283,7 @@ if __name__ == '__main__':
 
                         processControll.log(
                             # "\033[K",
-                            frame_information, end="\r")
+                            frame_information, end="\r", printOption=PrintOption.RESUME)
 
                         if (quantidadePosesMediapipe > 0):
                             videoManipulation.display(
