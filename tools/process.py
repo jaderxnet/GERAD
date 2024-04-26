@@ -93,7 +93,7 @@ if __name__ == '__main__':
             processControll.log('Download Concluído: ',
                                 selectedVideo['id'], " - ", result)
             videoManipulation = VideoManipulation(
-                videosFolder, videosFolder, selectedVideo["id"], selectedVideo["width"], selectedVideo["height"], True, True)
+                videosFolder, videosFolder, selectedVideo["id"], selectedVideo["width"], selectedVideo["height"], True, False)
             if (videoManipulation.isOpened() == False):
                 processControll.logError(
                     "Error opening video stream or file: " + selectedVideo["id"])
@@ -245,18 +245,35 @@ if __name__ == '__main__':
                                                               dictionary[selectedVideo["id"]]["frames"
                                                                                               ][frames_count]["mediapipe"]["keypoints"][0][filter_indices], index=index)
                                 index += 1
+
                             # (EPDNVP)EndPoint Diference Normalized Euclidian distance sum multiply by visivle product
                             dictionary[selectedVideo["id"]
-                                       ]["frames"][frames_count]["EPDNVP"] = metricEPDNVP.minor_distance
+                                       ]["frames"][frames_count]["EPDNVP"] = {}
+                            dictionary[selectedVideo["id"]
+                                       ]["frames"][frames_count]["EPDNVP"]["minor_distance"] = metricEPDNVP.minor_distance
+                            dictionary[selectedVideo["id"]
+                                       ]["frames"][frames_count]["EPDNVP"]["index"] = metricEPDNVP.index
                             metricEPDNVP.increaseValue()
                             dictionary[selectedVideo["id"]
-                                       ]["frames"][frames_count]["EPDNMVP"] = metricEPDNMVP.minor_distance
+                                       ]["frames"][frames_count]["EPDNMVP"] = {}
+                            dictionary[selectedVideo["id"]
+                                       ]["frames"][frames_count]["EPDNMVP"]["minor_distance"] = metricEPDNMVP.minor_distance
+                            dictionary[selectedVideo["id"]
+                                       ]["frames"][frames_count]["EPDNMVP"]["index"] = metricEPDNMVP.index
                             metricEPDNMVP.increaseValue()
                             dictionary[selectedVideo["id"]
-                                       ]["frames"][frames_count]["EPDNM"] = metricEPDNM.minor_distance
+                                       ]["frames"][frames_count]["EPDNM"] = {}
+                            dictionary[selectedVideo["id"]
+                                       ]["frames"][frames_count]["EPDNM"]["minor_distance"] = metricEPDNM.minor_distance
+                            dictionary[selectedVideo["id"]
+                                       ]["frames"][frames_count]["EPDNM"]["index"] = metricEPDNM.index
                             metricEPDNM.increaseValue()
                             dictionary[selectedVideo["id"]
-                                       ]["frames"][frames_count]["EPE"] = metricEPE.minor_distance
+                                       ]["frames"][frames_count]["EPE"] = {}
+                            dictionary[selectedVideo["id"]
+                                       ]["frames"][frames_count]["EPE"]["minor_distance"] = metricEPE.minor_distance
+                            dictionary[selectedVideo["id"]
+                                       ]["frames"][frames_count]["EPE"]["index"] = metricEPE.index
                             metricEPE.increaseValue()
                             totalCount += 1
                         frame_information = frame_information + \
