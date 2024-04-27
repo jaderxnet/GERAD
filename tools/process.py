@@ -66,7 +66,7 @@ if __name__ == '__main__':
     inputFilePath = "/Users/jaderxnet/_DADOS/GitHub/GERAD/ListsInfo/processedFrevo.csv"
     videosFolder = "videoTest"
     processControll = VideosProcess(
-        inputFilePath, videosFolder, PrintOption.NOT, False, True)
+        inputFilePath, videosFolder, PrintOption.NOT, True, True)
     processControll.readInput()
     idexexStatusProcessing = processControll.getIndexByStatus("Processing")
     idexexStatusReady = processControll.getIndexByStatus("Ready")
@@ -246,7 +246,7 @@ if __name__ == '__main__':
                                                                                               ][frames_count]["mediapipe"]["keypoints"][0][filter_indices], index=index)
                                 index += 1
 
-                            # (EPDNVP)EndPoint Diference Normalized Euclidian distance sum multiply by visivle product
+                            # (EPDNVP)EndPoint Diference Normalized Euclidian distance sum multiply by visible product
                             dictionary[selectedVideo["id"]
                                        ]["frames"][frames_count]["EPDNVP"] = {}
                             dictionary[selectedVideo["id"]
@@ -356,5 +356,3 @@ if __name__ == '__main__':
                 processControll.changeStatus(idexStatusReady, 'Processed')
                 processControll.updateCSVInput()
                 processControll.saveOutputFile(selectedVideo['id'], dictionary)
-
-            break

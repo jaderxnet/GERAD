@@ -90,8 +90,8 @@ class Histogram:
         self.threshold = []
 
     def valuesNPArray(self):
-        if (self.histogramTipe == MetricTipe.EPE):
-            print("AQUI: ", self.idVideo, self.histogramTipe, self.valueList)
+        # if (self.histogramTipe == MetricTipe.EPE):
+        #    print("AQUI: ", self.idVideo, self.histogramTipe, self.valueList)
         self.valueList = np.array(self.valueList)
 
 
@@ -236,33 +236,53 @@ if __name__ == '__main__':
                             y[id]["frames"][x]["mediapipe"]["poses_count"] == 0):
                         metrics["EPDNVP Discord"].valueList.append(5)
                     else:
-                        if (y[id]["frames"][x]["EPDNVP"] >= 1):
+                        if ("minor_distance" in y[id]["frames"][x]["EPDNVP"]):
+                            if (y[id]["frames"][x]["EPDNVP"]["minor_distance"] >= 1):
+                                metrics["EPDNVP Discord"].valueList.append(
+                                    y[id]["frames"][x]["EPDNVP"]["minor_distance"])
+                        elif (y[id]["frames"][x]["EPDNVP"] >= 1):
                             metrics["EPDNVP Discord"].valueList.append(
                                 y[id]["frames"][x]["EPDNVP"])
                         else:
                             metrics["EPDNVP Discord"].valueList.append(0)
                 if ("EPDNVP" in y[id]["frames"][x]):
                     # print(y[id]["frames"][x]["EPDNVP"])
-                    metrics["EPDNVP"].valueList.append(
-                        y[id]["frames"][x]["EPDNVP"])
+                    if ("minor_distance" in y[id]["frames"][x]["EPDNVP"]):
+                        metrics["EPDNVP"].valueList.append(
+                            y[id]["frames"][x]["EPDNVP"]["minor_distance"])
+                    else:
+                        metrics["EPDNVP"].valueList.append(
+                            y[id]["frames"][x]["EPDNVP"])
                 else:
                     metrics["EPDNVP"].valueList.append(0)
                 if ("EPDNMVP" in y[id]["frames"][x]):
                     # print(y[id]["frames"][x]["EPDNVP"])
-                    metrics["EPDNMVP"].valueList.append(
-                        y[id]["frames"][x]["EPDNMVP"])
+                    if ("minor_distance" in y[id]["frames"][x]["EPDNMVP"]):
+                        metrics["EPDNMVP"].valueList.append(
+                            y[id]["frames"][x]["EPDNMVP"]["minor_distance"])
+                    else:
+                        metrics["EPDNMVP"].valueList.append(
+                            y[id]["frames"][x]["EPDNMVP"])
                 else:
                     metrics["EPDNMVP"].valueList.append(0)
                 if ("EPDNM" in y[id]["frames"][x]):
                     # print(y[id]["frames"][x]["EPDNM"])
-                    metrics["EPDNM"].valueList.append(
-                        y[id]["frames"][x]["EPDNM"])
+                    if ("minor_distance" in y[id]["frames"][x]["EPDNM"]):
+                        metrics["EPDNM"].valueList.append(
+                            y[id]["frames"][x]["EPDNM"]["minor_distance"])
+                    else:
+                        metrics["EPDNM"].valueList.append(
+                            y[id]["frames"][x]["EPDNM"])
                 else:
                     metrics["EPDNM"].valueList.append(0)
                 if ("EPE" in y[id]["frames"][x]):
                     # print(y[id]["frames"][x]["EPDNM"])
-                    metrics["EPE"].valueList.append(
-                        y[id]["frames"][x]["EPE"])
+                    if ("minor_distance" in y[id]["frames"][x]["EPE"]):
+                        metrics["EPE"].valueList.append(
+                            y[id]["frames"][x]["EPE"]["minor_distance"])
+                    else:
+                        metrics["EPE"].valueList.append(
+                            y[id]["frames"][x]["EPE"])
                 else:
                     metrics["EPE"].valueList.append(0)
             '''
