@@ -75,24 +75,99 @@ class HistogramProcess:
         plt.title(file_name)
         plt.bar(range(len(valores)), valores, color=cols)
         if (save):
-            plt.savefig(self.outPutFolder + "/" + folder + "/" + label +
+            plt.savefig(self.outPutFolder + "/" + id + "/" + label +
                         "_" + id+'.png', dpi=200)
         if (show):
             plt.show()
 
+    def plot_grph_DataFrame(self, valoresTotais, valoresThreshold, new_map, show, save, file_name, label):
+        valuesScala = valoresTotais / float(max(valoresTotais))
+        # indi = 0
+
+        # my_cmap = plt.get_cmap("viridis")
+
+        # print('Max: ' + str(max(valores)))
+
+        cols = new_map(valuesScala)
+        plot = plt.scatter(
+            valoresTotais, valoresTotais, c=valoresTotais, cmap=new_map)
+        plt.clf()
+        plt.colorbar(plot)
+        plt.xlabel('frames/s')
+        plt.ylabel(label)
+        plt.title(file_name)
+        framesX = [int(numeric_string)
+                   for numeric_string in valoresThreshold["Frame"]]
+
+        # print("Frames X: ", framesX)
+        plt.bar(framesX, valoresThreshold["Value"], color=cols)
+
+        if (save):
+            plt.savefig(self.outPutFolder + "/" + id + "/" + label +
+                        "_" + id+'.png', dpi=200)
+        if (show):
+            plt.show()
+
+    def saveHistogramDataInCSV(self, histogram):
+        if (type(histogram.dataFrame) is pd.DataFrame):
+            histogram.dataFrame.to_csv(
+                f'{self.outPutFolder}/{histogram.idVideo}/{histogram.idVideo}-{histogram.histogramTipe}.csv', sep='\t', encoding='utf-8')
+            histogram.thresholdValues.to_csv(
+                f'{self.outPutFolder}/{histogram.idVideo}/{histogram.idVideo}-{histogram.histogramTipe}-Threshold{histogram.threshold}.csv', sep='\t', encoding='utf-8')
+
+
+class ThresholdType(Enum):
+    MINOR = 1
+    EQUAL = 2
+    MAJOR = 3
+    MINOR_EQUAL = 4
+    MAJOR_EQUAL = 5
+
 
 class Histogram:
-    def __init__(self, idVideo, histogramTipe) -> None:
+    def __init__(self, idVideo, histogramTipe, thresholdTipe=ThresholdType.MINOR) -> None:
         self.idVideo = idVideo
         self.histogramTipe = histogramTipe
+        self.thresholdTipe = thresholdTipe
         self.frames = []
         self.valueList = []
-        self.threshold = []
+        self.dataFrame = "NAN"
+        self.threshold = "NAN"
+        self.thresholdValues = "NAN"
 
     def valuesNPArray(self):
         # if (self.histogramTipe == MetricTipe.EPE):
         #    print("AQUI: ", self.idVideo, self.histogramTipe, self.valueList)
         self.valueList = np.array(self.valueList)
+
+    def valuesToDataFrame(self):
+        if (len(self.frames) == len(self.valueList)):
+            print(len(self.frames), len(self.valueList))
+            self.dataFrame = pd.DataFrame()
+            self.dataFrame["Frame"] = self.frames
+            self.dataFrame["Value"] = self.valueList
+
+    def applyThreshold(self):
+        if (len(self.frames) == len(self.valueList)):
+            if (self.thresholdTipe == ThresholdType.MINOR):
+                self.thresholdValues = self.dataFrame.loc[(
+                    self.dataFrame['Value'] < self.threshold) & (
+                    self.dataFrame['Value'] != 0)]
+            elif (self.thresholdTipe == ThresholdType.MAJOR):
+                self.thresholdValues = self.dataFrame.loc[(
+                    self.dataFrame['Value'] > self.threshold) & (
+                    self.dataFrame['Value'] != 0)]
+            elif (self.thresholdTipe == ThresholdType.MINOR_EQUAL):
+                self.thresholdValues = self.dataFrame.loc[(
+                    self.dataFrame['Value'] <= self.threshold) & (
+                    self.dataFrame['Value'] != 0)]
+            elif (self.thresholdTipe == ThresholdType.MAJOR_EQUAL):
+                self.thresholdValues = self.dataFrame.loc[(
+                    self.dataFrame['Value'] >= self.threshold) & (
+                    self.dataFrame['Value'] != 0)]
+            elif (self.thresholdTipe == ThresholdType.EQUAL):
+                self.thresholdValues = self.dataFrame.loc[(
+                    self.dataFrame['Value'] == self.threshold)]
 
 
 class ColorDictType(Enum):
@@ -214,7 +289,7 @@ if __name__ == '__main__':
                               folder + "/" + file_name+".txt", "r")
             text = outputFile.read().replace('\n', '')
 
-            y = json.loads(text)
+            framesDictionary = json.loads(text)
             metrics = {}
             metrics["EPDNVP"] = Histogram(id, MetricTipe.EPDNVP)
             metrics["EPDNMVP"] = Histogram(id, MetricTipe.EPDNMVP)
@@ -223,66 +298,66 @@ if __name__ == '__main__':
             metrics["EPDNVP Discord"] = Histogram(id, MetricTipe.EPDNVP)
             # the result is a Python dictionary:
             # print(y[file_name]["EPDNVP"])
-            total_frame = y[id]["frames_count"]
+            total_frame = framesDictionary[id]["frames_count"]
             print("Total: ", id)
-            for x in y[id]["frames"].keys():
+            for frame in framesDictionary[id]["frames"].keys():
                 for metric in metrics.values():
-                    metric.frames.append(x)
-                if (y[id]["frames"][x]["YOLO"]["poses_count"] <= 0 and
-                        y[id]["frames"][x]["mediapipe"]["poses_count"] <= 0):
+                    metric.frames.append(frame)
+                if (framesDictionary[id]["frames"][frame]["YOLO"]["poses_count"] <= 0 and
+                        framesDictionary[id]["frames"][frame]["mediapipe"]["poses_count"] <= 0):
                     metrics["EPDNVP Discord"].valueList.append(0)
                 else:
-                    if (y[id]["frames"][x]["YOLO"]["poses_count"] == 0 or
-                            y[id]["frames"][x]["mediapipe"]["poses_count"] == 0):
+                    if (framesDictionary[id]["frames"][frame]["YOLO"]["poses_count"] == 0 or
+                            framesDictionary[id]["frames"][frame]["mediapipe"]["poses_count"] == 0):
                         metrics["EPDNVP Discord"].valueList.append(5)
                     else:
-                        if ("minor_distance" in y[id]["frames"][x]["EPDNVP"]):
-                            if (y[id]["frames"][x]["EPDNVP"]["minor_distance"] >= 1):
+                        if ("minor_distance" in framesDictionary[id]["frames"][frame]["EPDNVP"]):
+                            if (framesDictionary[id]["frames"][frame]["EPDNVP"]["minor_distance"] >= 1):
                                 metrics["EPDNVP Discord"].valueList.append(
-                                    y[id]["frames"][x]["EPDNVP"]["minor_distance"])
-                        elif (y[id]["frames"][x]["EPDNVP"] >= 1):
+                                    framesDictionary[id]["frames"][frame]["EPDNVP"]["minor_distance"])
+                        elif (framesDictionary[id]["frames"][frame]["EPDNVP"] >= 1):
                             metrics["EPDNVP Discord"].valueList.append(
-                                y[id]["frames"][x]["EPDNVP"])
+                                framesDictionary[id]["frames"][frame]["EPDNVP"])
                         else:
                             metrics["EPDNVP Discord"].valueList.append(0)
-                if ("EPDNVP" in y[id]["frames"][x]):
+                if ("EPDNVP" in framesDictionary[id]["frames"][frame]):
                     # print(y[id]["frames"][x]["EPDNVP"])
-                    if ("minor_distance" in y[id]["frames"][x]["EPDNVP"]):
+                    if ("minor_distance" in framesDictionary[id]["frames"][frame]["EPDNVP"]):
                         metrics["EPDNVP"].valueList.append(
-                            y[id]["frames"][x]["EPDNVP"]["minor_distance"])
+                            framesDictionary[id]["frames"][frame]["EPDNVP"]["minor_distance"])
                     else:
                         metrics["EPDNVP"].valueList.append(
-                            y[id]["frames"][x]["EPDNVP"])
+                            framesDictionary[id]["frames"][frame]["EPDNVP"])
                 else:
                     metrics["EPDNVP"].valueList.append(0)
-                if ("EPDNMVP" in y[id]["frames"][x]):
+                if ("EPDNMVP" in framesDictionary[id]["frames"][frame]):
                     # print(y[id]["frames"][x]["EPDNVP"])
-                    if ("minor_distance" in y[id]["frames"][x]["EPDNMVP"]):
+                    if ("minor_distance" in framesDictionary[id]["frames"][frame]["EPDNMVP"]):
                         metrics["EPDNMVP"].valueList.append(
-                            y[id]["frames"][x]["EPDNMVP"]["minor_distance"])
+                            framesDictionary[id]["frames"][frame]["EPDNMVP"]["minor_distance"])
                     else:
                         metrics["EPDNMVP"].valueList.append(
-                            y[id]["frames"][x]["EPDNMVP"])
+                            framesDictionary[id]["frames"][frame]["EPDNMVP"])
                 else:
                     metrics["EPDNMVP"].valueList.append(0)
-                if ("EPDNM" in y[id]["frames"][x]):
+                if ("EPDNM" in framesDictionary[id]["frames"][frame]):
                     # print(y[id]["frames"][x]["EPDNM"])
-                    if ("minor_distance" in y[id]["frames"][x]["EPDNM"]):
+                    if ("minor_distance" in framesDictionary[id]["frames"][frame]["EPDNM"]):
                         metrics["EPDNM"].valueList.append(
-                            y[id]["frames"][x]["EPDNM"]["minor_distance"])
+                            framesDictionary[id]["frames"][frame]["EPDNM"]["minor_distance"])
                     else:
                         metrics["EPDNM"].valueList.append(
-                            y[id]["frames"][x]["EPDNM"])
+                            framesDictionary[id]["frames"][frame]["EPDNM"])
                 else:
                     metrics["EPDNM"].valueList.append(0)
-                if ("EPE" in y[id]["frames"][x]):
+                if ("EPE" in framesDictionary[id]["frames"][frame]):
                     # print(y[id]["frames"][x]["EPDNM"])
-                    if ("minor_distance" in y[id]["frames"][x]["EPE"]):
+                    if ("minor_distance" in framesDictionary[id]["frames"][frame]["EPE"]):
                         metrics["EPE"].valueList.append(
-                            y[id]["frames"][x]["EPE"]["minor_distance"])
+                            framesDictionary[id]["frames"][frame]["EPE"]["minor_distance"])
                     else:
                         metrics["EPE"].valueList.append(
-                            y[id]["frames"][x]["EPE"])
+                            framesDictionary[id]["frames"][frame]["EPE"])
                 else:
                     metrics["EPE"].valueList.append(0)
             '''
@@ -297,6 +372,23 @@ if __name__ == '__main__':
             metrics["EPDNM"].valuesNPArray()
             metrics["EPE"].valuesNPArray()
             metrics["EPDNVP Discord"].valuesNPArray()
+
+            metrics["EPDNVP"].thresholdTipe = ThresholdType.MINOR_EQUAL
+            metrics["EPDNVP"].threshold = 0.8
+            metrics["EPDNMVP"].thresholdTipe = ThresholdType.MINOR_EQUAL
+            metrics["EPDNMVP"].threshold = 0.05
+            metrics["EPDNM"].thresholdTipe = ThresholdType.MINOR_EQUAL
+            metrics["EPDNM"].threshold = 0.1
+            metrics["EPE"].thresholdTipe = ThresholdType.MINOR_EQUAL
+            metrics["EPE"].threshold = 200
+            metrics["EPDNVP Discord"].thresholdTipe = ThresholdType.EQUAL
+            metrics["EPDNVP Discord"].threshold = 0
+
+            for metric in metrics.values():
+                metric.valuesToDataFrame()
+                metric.applyThreshold()
+                histogramProcess.saveHistogramDataInCSV(metric)
+
             '''
             indi = 0
             for z in valores:
@@ -306,14 +398,23 @@ if __name__ == '__main__':
             '''
 
             valores_Similar = []
-            for x in metrics["EPDNVP"].valueList:
-                if x <= 0 or x > 1:
+            for frame in metrics["EPDNVP"].valueList:
+                if frame <= 0 or frame > 1:
                     valores_Similar.append(0)
                 else:
-                    valores_Similar.append(1-x)
+                    valores_Similar.append(1-frame)
 
             colorMap1 = ColorMap(ColorDictType.DOWN)
             colorMap2 = ColorMap(ColorDictType.CENTER)
+
+            histogramProcess.plot_grph_DataFrame(metrics["EPDNVP"].valueList, metrics["EPDNVP"].thresholdValues, colorMap1.getMap(), False,
+                                                 True, file_name, 'EPDNVP Threshold')
+            histogramProcess.plot_grph_DataFrame(metrics["EPDNMVP"].valueList, metrics["EPDNMVP"].thresholdValues, colorMap1.getMap(), False,
+                                                 True, file_name, 'EPDNMVP Threshold')
+            histogramProcess.plot_grph_DataFrame(metrics["EPDNM"].valueList, metrics["EPDNM"].thresholdValues, colorMap1.getMap(),
+                                                 False, True, file_name, 'EPDNM Threshold')
+            histogramProcess.plot_grph_DataFrame(metrics["EPE"].valueList, metrics["EPE"].thresholdValues, colorMap1.getMap(),
+                                                 False, True, file_name, 'EPE Threshold')
 
             # True, False, True
             histogramProcess.plot_grph(metrics["EPDNVP"].valueList, colorMap1.getMap(), False,
