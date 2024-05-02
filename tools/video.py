@@ -27,6 +27,9 @@ class VideoManipulation:
             self.outputWriter = cv2.VideoWriter(self.outputPath+"/"+self.filename+"/OUT"+self.filename+".mp4", fourcc, 20.0,
                                                 (self.width, self.height))
 
+    def setNextFrame(self, frame):
+        self.inputReder.set(cv2.CAP_PROP_POS_FRAMES, frame-1)
+
     def readFrame(self):
         ret, frame = self.inputReder.read()
         # Display the resulting frame
@@ -81,11 +84,21 @@ class VideoManipulation:
 
 
 if __name__ == '__main__':
-    import cv2
-    img = cv2.imread('videos/_60Ga8MXQtA/EPDNM__60Ga8MXQtA.png')
-    cv2.startWindowThread()
-    cv2.imshow("preview", img)
-    cv2.waitKey(1000)
-    cv2.imshow("preview2", img)
-    cv2.waitKey(1000)
-    cv2.destroyAllWindows()
+    videoManipulation = VideoManipulation("videoTest/IS8r3wG8-Js/OUTIS8r3wG8-Js.mp4",
+                                          "videoTest", "IS8r3wG8-Js", 1920, 1080, False, True)
+    if (videoManipulation.isOpened() == False):
+        print(
+            "Error opening video stream or file: " + videoManipulation.inputPath)
+    else:
+        while (videoManipulation.isOpened() and videoManipulation.verifyVideoStop() == False):
+            ret, frame = videoManipulation.readFrame()
+            if (ret == False):
+                print(
+                    f'Frame Reader ERROR! VIDEO: ', videoManipulation.inputPath)
+                break
+            else:
+                # cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number-1)
+                videoManipulation.display("frame", frame)
+        videoManipulation.release()
+        videoManipulation.destroy()
+        # frames_count += 1
