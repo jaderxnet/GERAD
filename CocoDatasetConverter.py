@@ -13,8 +13,12 @@ from sklearn.model_selection import GroupKFold
 
 
 class NpEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.integer):
+  """
+    Encoder Json Class
+  """
+
+  def default(self, obj):
+       if isinstance(obj, np.integer):
             return int(obj)
         if isinstance(obj, np.floating):
             return float(obj)
@@ -24,6 +28,9 @@ class NpEncoder(json.JSONEncoder):
 
 
 class NpDecorder(json.JSONDecoder):
+    '''
+    Decoder Json Class
+    '''
     def default(self, obj):
         if isinstance(obj, int):
             return np.integer(obj)
@@ -35,8 +42,10 @@ class NpDecorder(json.JSONDecoder):
 
 
 # https://www.kaggle.com/code/remekkinas/yolox-training-pipeline-cots-dataset-lb-0-507/notebook
-
 def to_int_Visibility(keypoints):
+    '''
+    Transform keypoins in double value colun for sequential array of 51 keys + visibility YOLOLike
+    '''
     keypoints_int_visibility = []
     for keypoint in keypoints:
         keypoints_int_visibility.append(int(keypoint[0]))
@@ -48,7 +57,9 @@ def to_int_Visibility(keypoints):
 
 
 def dataset2coco(df, dest_path):
-
+    '''
+    Format a map in COCOLike based in dataframe informations
+    '''
     global annotion_id
     annotion_id = 1
     annotations_json = {
@@ -125,13 +136,18 @@ def dataset2coco(df, dest_path):
         f"Dataset COTS annotation to COCO json format completed! Files: {len(df)}")
     return annotations_json
 
-
 def get_bbox(annots):
+    '''
+    Transform a map values in list format
+    '''    
     bboxes = [list(annot.values()) for annot in annots]
     return bboxes
 
 
 def normalize_distance_visible(keypoints1, keypoints2):
+    '''
+    Mormalize keypoints distance based only in visible keypoints distance
+    '''
     sum_distance = 0
     for point1, point2 in zip(keypoints1, keypoints2):
         dist = np.linalg.norm(point1[0:2]-point2[0:2])
@@ -140,8 +156,10 @@ def normalize_distance_visible(keypoints1, keypoints2):
         sum_distance += dist
     return sum_distance
 
-
 def returnMinorDistanceIndexAndKeypoints(keypoint0, keypoints):
+    '''
+        Return minor distance between two keypoints pair based in EPDNVP metric
+    '''
     minor_distance_EPDNVP = 100000
     minor_distance_index = -1
     index = 0
@@ -156,8 +174,10 @@ def returnMinorDistanceIndexAndKeypoints(keypoint0, keypoints):
 
     return minor_distance_index, keypoints[minor_distance_index]
 
-
 def get_bbox_from(keypoint):
+    '''
+    Retorna uma bounding box 
+    '''
     xmin = 1000000
     xmax = -1000000
     ymin = 1000000
@@ -177,6 +197,9 @@ def get_bbox_from(keypoint):
 
 
 def drawPoints(keypoints, img):
+    '''
+    Return a Image with the points painted
+    '''
     # print("Keypoints: ", keypoints)
     for point in keypoints:
         # print("Keypoint: ", point[0], point[1])
@@ -189,6 +212,9 @@ SCREEN_DIMENSIONS = (1920, 1080)
 
 
 def to_pixel_coords(relative_coords):
+    '''
+    Transform the coordinates array in pixel relative coordinates array
+    '''
     # print("to_pixel_coords: ", relative_coords)
     result = []
     for coord in relative_coords:
@@ -199,7 +225,7 @@ def to_pixel_coords(relative_coords):
     # print("Result: ", result)
     return result
 
-
+#Read csv file to controll process
 print_all = False
 
 inputFilePath = "processedVideos.csv"
@@ -231,7 +257,7 @@ else:
                 print("Index to update: ", indexToProcess)
                 print("Updated Table: ", videosTable)
                 print("Selected Video: ", selectedVideo)
-
+#Load csv to select videos, metrics and thresholds
 inputFilePath = "videodatasettest.csv"
 videosDataset = pd.read_csv(inputFilePath, sep=";")
 
@@ -261,10 +287,13 @@ videoDatasetDict = videosDataset.set_index('video_id').T.to_dict('list')
 print("Dict: ", videoDatasetDict)
 df = df.loc[df['id'].isin(filtered)]
 print("Filtered: \n", df)
+#Define Train Path, Files Folder and dataset complete lists
 TRAIN_PATH = 'dataset'
 pathVideos = "videos/"
 dataset = {"video_id": [], "frame": [],
            "keypoints": [], "bbox": [], "image_id": [], "image_path": []}
+# For each video ID open annotation filenames in folther
+# and transform the file annotatations in intens of dataset array
 for id in df["id"]:
 
     folder = file_name = id
@@ -305,6 +334,7 @@ for id in df["id"]:
                 # print("Index: ", videoDatasetDict[id][1], " Value Expected: ", videoDatasetDict[id]
                 #      [2], " Value: ", videoData[id]["frames"][x][videoDatasetDict[id][1]])
                 # raise Exception("PAROU!")
+    #Print size of complet dataset
     print("Id: ", id, "Count: ", len(indices),
           "dataset:", len(dataset["frame"]))
 
@@ -336,7 +366,7 @@ for id in df["id"]:
 #    df_train.loc[val_idx, 'fold'] = fold
 
 
-# cria o diretorio
+# Create paht anda directorys COCOLike
 HOME_DIR = 'dataset'
 DATASET_PATH = '/images'
 # cria as pastas
@@ -373,6 +403,7 @@ printAll = False
 oldVideoId = None
 cap = None
 
+#Print size of complet dataset
 if saveImages:
     for indexDataset in range(len(dataset["video_id"])):
         print("Index: ", indexDataset)
