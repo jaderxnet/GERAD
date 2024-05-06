@@ -374,7 +374,7 @@ if __name__ == '__main__':
             metrics["EPDNVP Discord"].valuesNPArray()
 
             metrics["EPDNVP"].thresholdTipe = ThresholdType.MINOR_EQUAL
-            metrics["EPDNVP"].threshold = 0.8
+            metrics["EPDNVP"].threshold = 0.2
             metrics["EPDNMVP"].thresholdTipe = ThresholdType.MINOR_EQUAL
             metrics["EPDNMVP"].threshold = 0.05
             metrics["EPDNM"].thresholdTipe = ThresholdType.MINOR_EQUAL

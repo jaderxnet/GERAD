@@ -3,7 +3,7 @@ import cv2
 
 
 class VideoManipulation:
-    def __init__(self, inputPath, outputPath, filename, width, height, saveVideo=False, displayFrame=True) -> None:
+    def __init__(self, inputPath, outputPath, filename, width, height, saveVideo=False, displayFrame=True, forceFileName=False) -> None:
         self.inputPath = inputPath
         self.outputPath = outputPath
         self.filename = filename
@@ -11,12 +11,17 @@ class VideoManipulation:
         self.height = height
         self.saveVideo = saveVideo
         self.displayFrame = displayFrame
-        self.readCapture()
+        self.readCapture(forceFileName)
 
-    def readCapture(self):
+    def readCapture(self, forceFileName=False):
         # Use OpenCV’s VideoCapture to load the input video.
-        self.inputReder = cv2.VideoCapture(
-            self.outputPath+"/"+self.filename+"/"+self.filename+".mp4")
+        if (forceFileName):
+            print("AQUI1" + self.filename)
+            self.inputReder = cv2.VideoCapture(self.filename)
+            print("AQUI2")
+        else:
+            self.inputReder = cv2.VideoCapture(
+                self.outputPath+"/"+self.filename+"/"+self.filename+".mp4")
 
     def isOpened(self):
         return self.inputReder.isOpened()

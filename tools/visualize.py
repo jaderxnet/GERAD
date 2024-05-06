@@ -12,7 +12,7 @@ if __name__ == '__main__':
     metrics["EPDNM"] = Histogram(id, MetricTipe.EPDNM)
     metrics["EPE"] = Histogram(id, MetricTipe.EPE)
     metrics["EPDNVP"].thresholdTipe = ThresholdType.MINOR_EQUAL
-    metrics["EPDNVP"].threshold = 0.8
+    metrics["EPDNVP"].threshold = 0.2
     metrics["EPDNMVP"].thresholdTipe = ThresholdType.MINOR_EQUAL
     metrics["EPDNMVP"].threshold = 0.05
     metrics["EPDNM"].thresholdTipe = ThresholdType.MINOR_EQUAL
@@ -22,12 +22,12 @@ if __name__ == '__main__':
     # IS8r3wG8-Js-MetricTipe.EPDNM-Threshold0.1
     df = pd.read_csv(foldePath + "/" +
                      id + "/" + id+"-" +
-                     str(metrics["EPE"].histogramTipe)+"-Threshold" +
-                     str(metrics["EPE"].threshold)+".csv",
+                     str(metrics["EPDNVP"].histogramTipe)+"-Threshold" +
+                     str(metrics["EPDNVP"].threshold)+".csv",
                      usecols=["Frame", "Value"], sep="\t")
 
     videoManipulation = VideoManipulation(
-        "videoTest/IS8r3wG8-Js/OUTIS8r3wG8-Js.mp4", foldePath, id, 1920, 1080, False, True)
+        "videoTest/IS8r3wG8-Js/OUTIS8r3wG8-Js.mp4", foldePath, "videoTest/IS8r3wG8-Js/OUTIS8r3wG8-Js.mp4", 1920, 1080, False, True, True)
     for frameFromFile in df["Frame"]:
         if videoManipulation.verifyVideoStop() == True:
             break

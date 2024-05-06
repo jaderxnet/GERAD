@@ -51,11 +51,11 @@ class CocoConverter:
 
     def build(self, df):
         '''
-        Para cada linha vai ser gerada uma imagem com bbox, segmentação e anotação
+        - Expect in data frame: videoKeys,  frameKey by video, filename in folder, 
+        bbarray x in 0, y in 1, width in 2, height in 3, keypoints array COCOLIke 
+        - Para cada linha vai ser gerada uma imagem com bbox, segmentação e anotação
         atributos importantes
         image: id, file_name, heifht, width
-        segmentation:
-
         '''
         for video_id in df.keys():
 
@@ -147,7 +147,8 @@ class CocoConverter:
 
         return minor_distance_index, keypoints[minor_distance_index]
 
-    def get_bbox_from(self, keypoint):
+    @staticmethod
+    def get_bbox_from(keypoint):
         xmin = 1000000
         xmax = -1000000
         ymin = 1000000
@@ -173,14 +174,14 @@ class CocoConverter:
                              color=(0, 0, 255), thickness=-1)
         return img
 
-    def to_pixel_coords(self, relative_coords):
-        # print("to_pixel_coords: ", relative_coords)
+    @staticmethod
+    def to_pixel_coords(relative_coords, width, height):
         result = []
         for coord in relative_coords:
             # print("Dim: ", SCREEN_DIMENSIONS, "Coord: ", coord,
             #      "Result: ", coord[0] * SCREEN_DIMENSIONS[0])
             result.append(
-                np.array((coord[0] * self.SCREEN_DIMENSIONS[0], coord[1] * self.SCREEN_DIMENSIONS[1])))
+                np.array((coord[0] * width, coord[1] * height)))
         # print("Result: ", result)
         return result
 

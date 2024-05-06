@@ -150,7 +150,7 @@ if __name__ == '__main__':
             metrics["EPDNM"] = Histogram(id, MetricTipe.EPDNM)
             metrics["EPE"] = Histogram(id, MetricTipe.EPE)
             metrics["EPDNVP"].thresholdTipe = ThresholdType.MINOR_EQUAL
-            metrics["EPDNVP"].threshold = 0.8
+            metrics["EPDNVP"].threshold = 0.2
             metrics["EPDNMVP"].thresholdTipe = ThresholdType.MINOR_EQUAL
             metrics["EPDNMVP"].threshold = 0.05
             metrics["EPDNM"].thresholdTipe = ThresholdType.MINOR_EQUAL
@@ -160,8 +160,8 @@ if __name__ == '__main__':
             # IS8r3wG8-Js-MetricTipe.EPDNM-Threshold0.1
             df = pd.read_csv(FilterProcess.outPutFolder + "/" +
                              str(folder) + "/" + str(file_name)+"-" +
-                             str(metrics["EPE"].histogramTipe)+"-Threshold" +
-                             str(metrics["EPE"].threshold)+".csv",
+                             str(metrics["EPDNVP"].histogramTipe)+"-Threshold" +
+                             str(metrics["EPDNVP"].threshold)+".csv",
                              usecols=["Frame", "Value"], sep="\t")
 
             framesFiltered = {
