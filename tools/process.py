@@ -64,7 +64,7 @@ class VideosProcess:
 
 if __name__ == '__main__':
     inputFilePath = "/Users/jaderxnet/_DADOS/GitHub/GERAD/ListsInfo/processedFrevo.csv"
-    videosFolder = "videoTest"
+    videosFolder = "videoTest2"
     processControll = VideosProcess(
         inputFilePath, videosFolder, PrintOption.NOT, True, True)
     processControll.readInput()
