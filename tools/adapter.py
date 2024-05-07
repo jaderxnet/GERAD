@@ -166,14 +166,6 @@ class CocoConverter:
         dify = ymax - ymin
         return [xmin, ymin, difx, dify]
 
-    def drawPoints(self, keypoints, img):
-        # print("Keypoints: ", keypoints)
-        for point in keypoints:
-            # print("Keypoint: ", point[0], point[1])
-            img = cv2.circle(img, (int(point[0]), int(point[1])), radius=10,
-                             color=(0, 0, 255), thickness=-1)
-        return img
-
     @staticmethod
     def to_pixel_coords(relative_coords, width, height):
         result = []
@@ -345,8 +337,10 @@ class BraceDataset(Dataset):
                 self.map_annotations[video_id][frame_number]["box"] = np.array(
                     d[frame_id]['box'])
                 box = BraceDataset.get_box_from_keypoints(
-                    keypoints, box_border=0)
+                    keypoints, box_border=20)
                 self.map_annotations[video_id][frame_number]["new_box"] = box
+                print("Old Box: ", self.map_annotations[video_id][frame_number]["box"],
+                      "New Box", self.map_annotations[video_id][frame_number]["new_box"])
                 norm_kpt = BraceDataset.normalise_keypoints(box, keypoints)
                 self.map_annotations[video_id][frame_number]["normalized_keypoints"] = norm_kpt
             except AssertionError as e:
