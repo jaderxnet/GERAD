@@ -35,6 +35,13 @@ class VideoDataset(Dataset):
         return map_annotations
 
     @staticmethod
+    def drawRect(bbox, img):
+        img = cv2.rectangle(img, (int(bbox[0]), int(
+            bbox[1])), (int(bbox[0])+int(bbox[2]), int(
+                bbox[1])+int(bbox[3])), (255, 0, 0), 2)
+        return img
+
+    @staticmethod
     def drawPoints(keypoints, img):
         '''
         Return a Image with the points painted
@@ -93,7 +100,7 @@ class VideoDataset(Dataset):
                           [frame]["YOLO"]["poses_count"])
             print("Id: ", id, "Count: ", len(indicesToDataset),
                   "dataset:", len(dataset["frame"]))
-            return dataset
+        return dataset
 
     @staticmethod
     def createDatasetFoldersAndImages(ORIGINAL_PATH_VIDEOS, DATASET_PATH, drawAll, saveImages, printAll, oldVideoId):
@@ -139,7 +146,8 @@ class VideoDataset(Dataset):
                 if (cap.isOpened() == False):
                     raise Exception("Error opening video stream or file")
                 if printAll:
-                    print("Index Frame: ", dataset["frame"][indexDataset])
+                    print("ID: ", dataset["video_id"][indexDataset],
+                          " Frame: ", dataset["frame"][indexDataset])
                 while (indexFrame < int(dataset["frame"][indexDataset])):
                     ret, frame = cap.read()
                     if printAll:
@@ -157,9 +165,8 @@ class VideoDataset(Dataset):
                               dataset["image_path"][indexDataset])
                         print("Box: ", dataset["bbox"][indexDataset])
                     if drawAll:
-                        frame = cv2.rectangle(frame, (int(dataset["bbox"][indexDataset][0]), int(
-                            dataset["bbox"][indexDataset][1])), (int(dataset["bbox"][indexDataset][0])+int(dataset["bbox"][indexDataset][2]), int(
-                                dataset["bbox"][indexDataset][1])+int(dataset["bbox"][indexDataset][3])), (255, 0, 0), 2)
+                        frame = VideoDataset.drawRect(
+                            dataset["bbox"][indexDataset], frame)
                         frame = VideoDataset.drawPoints(
                             dataset["keypoints"][indexDataset], frame)
                     status = cv2.imwrite(
@@ -217,6 +224,7 @@ class VideoDataset(Dataset):
 
 
 if __name__ == '__main__':
+    print(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
     '''
     Main used to converter automatic videos and your annotations to cocodataset
     '''
@@ -224,18 +232,17 @@ if __name__ == '__main__':
     # STEPS:
     # 1 - Load File With a list of videos IDs, Metric, thressholds
     # video file path and path to filtered annotations of full dataset
-    HOME_DIR = 'dataset2Video'
-    DATASET_PATH = 'dataset'
+    HOME_DIR = 'dataseFrevo2'
+    DATASET_PATH = 'dataset2'
     # Load File csv with dataset list
     SCREEN_DIMENSIONS = (1920, 1080)
-    inputFilePath = "ListsVideos/videodatasettest2.csv"
-    pathVideos = "videoTest"
+    inputFilePath = "ListsInfo/videofrevodataset220240509145832.csv"
+    ORIGINAL_PATH_VIDEOS = "videoTest2"
 
     dataset = VideoDataset.loadFile(
-        inputFilePath, pathVideos, SCREEN_DIMENSIONS, DATASET_PATH)
+        inputFilePath, ORIGINAL_PATH_VIDEOS, SCREEN_DIMENSIONS, DATASET_PATH)
 
-    # Create all directorys and images by videos
-    ORIGINAL_PATH_VIDEOS = "videoTest"
+    print("TAM Dataset : ", len(dataset["video_id"]))
 
     # Create Frames by video
     # Use OpenCV’s VideoCapture to load the input video.
@@ -253,6 +260,8 @@ if __name__ == '__main__':
     val_percentage = 0.2
     videoDataset = VideoDataset.groupByFold(dataset, val_percentage)
 
+    print("TAM Dataset : ", videoDataset)
+    
     # Dataset depois Group
     SELECTED_FOLD = 4
     moveImages = True
@@ -279,3 +288,4 @@ if __name__ == '__main__':
                                  f"{HOME_DIR}/{DATASET_PATH}/annotations/train.json")
     VideoDataset.save_annot_json(
         val_annot_json, f"{HOME_DIR}/{DATASET_PATH}/annotations/valid.json")
+    print(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))

@@ -16,9 +16,8 @@ class VideoManipulation:
     def readCapture(self, forceFileName=False):
         # Use OpenCV’s VideoCapture to load the input video.
         if (forceFileName):
-            print("AQUI1" + self.filename)
+            print("VIDEO: " + self.filename)
             self.inputReder = cv2.VideoCapture(self.filename)
-            print("AQUI2")
         else:
             self.inputReder = cv2.VideoCapture(
                 self.outputPath+"/"+self.filename+"/"+self.filename+".mp4")
@@ -52,7 +51,12 @@ class VideoManipulation:
             self.outputWriter.write(frame)
 
     def verifyVideoStop(self):
-        return cv2.waitKey(25) & 0xFF == ord('q')
+        return cv2.waitKey(1) & 0xFF == ord('q')
+
+    def verifyVideoPause(self):
+        key = cv2.waitKey(1)
+        if (key == ord('p')):
+            cv2.waitKey(-1)  # wait until any key is pressed
 
     def release(self):
         # When everything done, release the video capture object

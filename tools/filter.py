@@ -10,13 +10,15 @@ import json
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import datetime
 
 
-class FilterProcess:
+class filterProcess:
     def __init__(self, inputFilePath, outPutFolder, printOption=True) -> None:
         self.inputFilePath = inputFilePath
         self.outPutFolder = outPutFolder
         self.printOption = printOption
+        self.videosTable = "NAN"
         self.logger = Logger(printOption=printOption)
         logging.basicConfig(filename=f'{outPutFolder}/histogram.log', filemode='w',
                             format='%(name)s - %(levelname)s - %(message)s')
@@ -118,56 +120,91 @@ class FilterProcess:
 
 
 if __name__ == '__main__':
+
+    todayformated = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    print(todayformated)
+    outputFilterdList = f'ListsInfo/videofrevodataset2{todayformated}.csv'
     inputFilePath = "ListsInfo/processedFrevo.csv"
-    videosFolder = "videoTest"
-    FilterProcess = FilterProcess(
+    videosFolder = "videoTest2"
+
+    filterProcess = filterProcess(
         inputFilePath, videosFolder, True)
-    FilterProcess.readInput()
-    idexexStatusProcessing = FilterProcess.getIndexByStatus("Processing")
-    idexexStatusProcessed = FilterProcess.getIndexByStatus("Processed")
+    filterProcess.readInput()
+
+    filteredList = pd.DataFrame()
+    filteredList.index = filterProcess.videosTable.index
+    # Assign the columns.
+    filteredList[['video_id', 'hashtags']
+                 ] = filterProcess.videosTable[['id', 'hashtags']]
+    print(filteredList)
+    idexexStatusProcessing = filterProcess.getIndexByStatus("Processing")
+    idexexStatusProcessed = filterProcess.getIndexByStatus("Processed")
     if (len(idexexStatusProcessing) > 0):
         print("PROCESSING THE INDEX VIDEO: ",
               idexexStatusProcessing.tolist()[0])
     elif (len(idexexStatusProcessed) <= 0):
         print("ALL VIDEOS PROCESSED!")
     else:
+        metrics = {}
+        metrics["EPDNVP"] = Histogram(id, MetricTipe.EPDNVP)
+        metrics["EPDNMVP"] = Histogram(id, MetricTipe.EPDNMVP)
+        metrics["EPDNM"] = Histogram(id, MetricTipe.EPDNM)
+        metrics["EPE"] = Histogram(id, MetricTipe.EPE)
+        metrics["EPDNVP"].thresholdTipe = ThresholdType.MINOR_EQUAL
+        metrics["EPDNVP"].threshold = 0.2
+        metrics["EPDNMVP"].thresholdTipe = ThresholdType.MINOR_EQUAL
+        metrics["EPDNMVP"].threshold = 0.05
+        metrics["EPDNM"].thresholdTipe = ThresholdType.MINOR_EQUAL
+        metrics["EPDNM"].threshold = 0.1
+        metrics["EPE"].thresholdTipe = ThresholdType.MINOR_EQUAL
+        metrics["EPE"].threshold = 200
+        # select Metric File
+        # metric;threshold;network;filteredAnnotation
+        othesColumns = {'metric': [], 'threshold': [],
+                        'network': [], 'filteredAnnotation': [],
+                        'quantFilteredFrames': []}
+        selectedMetric = metrics["EPDNVP"]
+
         for indexProcessed in idexexStatusProcessed.tolist():
-            selectedVideo = FilterProcess.getItemByIndex(indexProcessed)
-            FilterProcess.log("Index to update: ", indexProcessed)
-            FilterProcess.log("Updated Table: ", FilterProcess)
-            FilterProcess.log("Selected Video: ", selectedVideo)
+            selectedVideo = filterProcess.getItemByIndex(indexProcessed)
+            filterProcess.log("Index to update: ", indexProcessed)
+            filterProcess.log("Updated Table: ", filterProcess)
+            filterProcess.log("Selected Video: ", selectedVideo)
 
             folder = file_name = id = selectedVideo['id']
-            outputFile = open(FilterProcess.outPutFolder + "/" +
+            print(indexProcessed, "Filter: ", id)
+            outputFile = open(filterProcess.outPutFolder + "/" +
                               folder + "/" + file_name+".txt", "r")
             text = outputFile.read().replace('\n', '')
 
             framesDictionary = json.loads(text)
             finalDictionary = json.loads(text)
-            metrics = {}
-            metrics["EPDNVP"] = Histogram(id, MetricTipe.EPDNVP)
-            metrics["EPDNMVP"] = Histogram(id, MetricTipe.EPDNMVP)
-            metrics["EPDNM"] = Histogram(id, MetricTipe.EPDNM)
-            metrics["EPE"] = Histogram(id, MetricTipe.EPE)
-            metrics["EPDNVP"].thresholdTipe = ThresholdType.MINOR_EQUAL
-            metrics["EPDNVP"].threshold = 0.2
-            metrics["EPDNMVP"].thresholdTipe = ThresholdType.MINOR_EQUAL
-            metrics["EPDNMVP"].threshold = 0.05
-            metrics["EPDNM"].thresholdTipe = ThresholdType.MINOR_EQUAL
-            metrics["EPDNM"].threshold = 0.1
-            metrics["EPE"].thresholdTipe = ThresholdType.MINOR_EQUAL
-            metrics["EPE"].threshold = 200
-            # IS8r3wG8-Js-MetricTipe.EPDNM-Threshold0.1
-            df = pd.read_csv(FilterProcess.outPutFolder + "/" +
-                             str(folder) + "/" + str(file_name)+"-" +
-                             str(metrics["EPDNVP"].histogramTipe)+"-Threshold" +
-                             str(metrics["EPDNVP"].threshold)+".csv",
-                             usecols=["Frame", "Value"], sep="\t")
+
+            thresoldFile = pd.read_csv(filterProcess.outPutFolder + "/" +
+                                       str(folder) + "/" + str(file_name)+"-" +
+                                       str(selectedMetric.histogramTipe)+"-Threshold" +
+                                       str(selectedMetric.threshold)+".csv",
+                                       usecols=["Frame", "Value"], sep="\t")
 
             framesFiltered = {
-                key: framesDictionary[id]["frames"][str(key)] for key in df["Frame"]}
+                key: framesDictionary[id]["frames"][str(key)] for key in thresoldFile["Frame"]}
             finalDictionary[id]["frames"] = framesFiltered
-            outputFilePath = FilterProcess.outPutFolder + "/" + id + "/" + id+"Filtered.txt"
+            quantFiltered = len(thresoldFile["Frame"])
+            outputFilePath = filterProcess.outPutFolder + "/" + id + "/" + id+"Filtered.txt"
+            othesColumns["metric"].append(selectedMetric.histogramTipe.name)
+            othesColumns["threshold"].append(selectedMetric.threshold)
+            othesColumns["network"].append("YOLO")
+            othesColumns["filteredAnnotation"].append(outputFilePath)
+            othesColumns["quantFilteredFrames"].append(quantFiltered)
             file = open(outputFilePath, "w")
             file.write(json.dumps(finalDictionary, indent=4, cls=NpEncoder))
             file.close()
+            print('Filtered:', quantFiltered)
+        othesColumns = pd.DataFrame(othesColumns)
+        assert len(filteredList) == len(othesColumns)
+        print("OTHER: ", othesColumns)
+        filteredList = pd.concat(
+            [filteredList, othesColumns], axis=1)
+        print("CONCAT: ", filteredList)
+        filteredList.to_csv(outputFilterdList, sep=';')
+        print(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))

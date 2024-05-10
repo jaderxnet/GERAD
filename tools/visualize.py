@@ -3,8 +3,8 @@ from histogram import Histogram, MetricTipe, ThresholdType
 import pandas as pd
 
 if __name__ == '__main__':
-    id = "IS8r3wG8-Js"
-    foldePath = "videoTest"
+    id = "M7t9-ozjnEU"
+    foldePath = "videoTest2"
 
     metrics = {}
     metrics["EPDNVP"] = Histogram(id, MetricTipe.EPDNVP)
@@ -20,17 +20,18 @@ if __name__ == '__main__':
     metrics["EPE"].thresholdTipe = ThresholdType.MINOR_EQUAL
     metrics["EPE"].threshold = 200
     # IS8r3wG8-Js-MetricTipe.EPDNM-Threshold0.1
-    df = pd.read_csv(foldePath + "/" +
-                     id + "/" + id+"-" +
-                     str(metrics["EPDNVP"].histogramTipe)+"-Threshold" +
-                     str(metrics["EPDNVP"].threshold)+".csv",
-                     usecols=["Frame", "Value"], sep="\t")
-
+    filepath = foldePath + "/" + id + "/" + id+"-" + \
+        str(metrics["EPDNVP"].histogramTipe)+"-Threshold" + \
+        str(metrics["EPDNVP"].threshold)+".csv"
+    df = pd.read_csv(filepath, usecols=["Frame", "Value"], sep="\t")
+    print("Frames: ", len(df["Frame"]), " File: ", filepath)
+    filename = f'{foldePath}/{id}/OUT{id}.mp4'
     videoManipulation = VideoManipulation(
-        "videoTest/IS8r3wG8-Js/OUTIS8r3wG8-Js.mp4", foldePath, "videoTest/IS8r3wG8-Js/OUTIS8r3wG8-Js.mp4", 1920, 1080, False, True, True)
+        filename, foldePath, filename, 1920, 1080, False, True, True)
     for frameFromFile in df["Frame"]:
         if videoManipulation.verifyVideoStop() == True:
             break
+        videoManipulation.verifyVideoPause()
         if (videoManipulation.isOpened() == False):
             print(
                 "Error opening video stream or file: " + videoManipulation.inputPath)

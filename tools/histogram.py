@@ -266,7 +266,7 @@ class ColorMap:
 
 if __name__ == '__main__':
     inputFilePath = "ListsInfo/processedFrevo.csv"
-    videosFolder = "videoTest"
+    videosFolder = "videoTest2"
     histogramProcess = HistogramProcess(
         inputFilePath, videosFolder, True)
     histogramProcess.readInput()
