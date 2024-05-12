@@ -54,7 +54,7 @@ class VideoDataset(Dataset):
         return img
 
     @staticmethod
-    def loadFile(inputFilePath, pathVideos, SCREEN_DIMENSIONS, DATASET_PATH):
+    def loadFile(inputFilePath, pathVideos, DATASET_PATH):
         videosDataset = pd.read_csv(inputFilePath, sep=";")
         # Populate a map of lists with the dataset information data
         dataset = {"video_id": [], "frame": [],
@@ -84,7 +84,7 @@ class VideoDataset(Dataset):
                         yoloKeypoints = videoData[id]["frames"][frame]["YOLO"]["keypoints"]
                         indexKeypointMinorDistance = videoData[id]["frames"][frame][row["metric"]]["index"]
                         keypoint = CocoConverter.to_pixel_coords(
-                            np.array(yoloKeypoints[indexKeypointMinorDistance]), SCREEN_DIMENSIONS[0], SCREEN_DIMENSIONS[1])
+                            np.array(yoloKeypoints[indexKeypointMinorDistance]), row["width"], row["height"])
                         dataset["keypoints"].append(keypoint)
 
                         dataset["bbox"].append(
@@ -235,12 +235,11 @@ if __name__ == '__main__':
     HOME_DIR = 'dataseFrevo2'
     DATASET_PATH = 'dataset2'
     # Load File csv with dataset list
-    SCREEN_DIMENSIONS = (1920, 1080)
-    inputFilePath = "ListsInfo/videofrevodataset220240509145832.csv"
+    inputFilePath = "ListsInfo/videofrevodataset220240510131632.csv"
     ORIGINAL_PATH_VIDEOS = "videoTest2"
 
     dataset = VideoDataset.loadFile(
-        inputFilePath, ORIGINAL_PATH_VIDEOS, SCREEN_DIMENSIONS, DATASET_PATH)
+        inputFilePath, ORIGINAL_PATH_VIDEOS, DATASET_PATH)
 
     print("TAM Dataset : ", len(dataset["video_id"]))
 
@@ -261,7 +260,7 @@ if __name__ == '__main__':
     videoDataset = VideoDataset.groupByFold(dataset, val_percentage)
 
     print("TAM Dataset : ", videoDataset)
-    
+
     # Dataset depois Group
     SELECTED_FOLD = 4
     moveImages = True

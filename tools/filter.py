@@ -162,7 +162,7 @@ if __name__ == '__main__':
         # metric;threshold;network;filteredAnnotation
         othesColumns = {'metric': [], 'threshold': [],
                         'network': [], 'filteredAnnotation': [],
-                        'quantFilteredFrames': []}
+                        'quantFilteredFrames': [], 'width': [], 'height': []}
         selectedMetric = metrics["EPDNVP"]
 
         for indexProcessed in idexexStatusProcessed.tolist():
@@ -196,6 +196,8 @@ if __name__ == '__main__':
             othesColumns["network"].append("YOLO")
             othesColumns["filteredAnnotation"].append(outputFilePath)
             othesColumns["quantFilteredFrames"].append(quantFiltered)
+            othesColumns["width"].append(selectedVideo['width'])
+            othesColumns["height"].append(selectedVideo['height'])
             file = open(outputFilePath, "w")
             file.write(json.dumps(finalDictionary, indent=4, cls=NpEncoder))
             file.close()
