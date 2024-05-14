@@ -232,10 +232,10 @@ if __name__ == '__main__':
     # STEPS:
     # 1 - Load File With a list of videos IDs, Metric, thressholds
     # video file path and path to filtered annotations of full dataset
-    HOME_DIR = 'dataseFrevo2'
-    DATASET_PATH = 'dataset2'
+    HOME_DIR = 'datasetFrevo3'
+    DATASET_PATH = 'dataset3'
     # Load File csv with dataset list
-    inputFilePath = "ListsInfo/videofrevodataset220240510131632.csv"
+    inputFilePath = "ListsInfo/videofrevodataset220240514140423.csv"
     ORIGINAL_PATH_VIDEOS = "videoTest2"
 
     dataset = VideoDataset.loadFile(
@@ -246,7 +246,7 @@ if __name__ == '__main__':
     # Create Frames by video
     # Use OpenCV’s VideoCapture to load the input video.
 
-    drawAll = True
+    drawAll = False
     saveImages = True
     printAll = False
     oldVideoId = None

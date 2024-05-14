@@ -13,14 +13,16 @@ import matplotlib.pyplot as plt
 import datetime
 
 
-class filterProcess:
-    def __init__(self, inputFilePath, outPutFolder, printOption=True) -> None:
+class FilterProcess:
+    def __init__(self, inputFilePath, outPutFolder, printOption=True, removeFile='NAN') -> None:
         self.inputFilePath = inputFilePath
         self.outPutFolder = outPutFolder
         self.printOption = printOption
         self.videosTable = "NAN"
+        self.removeFile = removeFile
+        self.removeDataFrame = "NAN"
         self.logger = Logger(printOption=printOption)
-        logging.basicConfig(filename=f'{outPutFolder}/histogram.log', filemode='w',
+        logging.basicConfig(filename=f'{outPutFolder}/Filter{todayformated}.log', filemode='w',
                             format='%(name)s - %(levelname)s - %(message)s')
         logging.warning('This will get logged to a file')
 
@@ -37,6 +39,9 @@ class filterProcess:
         self.videosTable = pd.read_csv(self.inputFilePath, sep=';')
         self.logger.print("Lendo: ", self.inputFilePath)
         self.logger.print("Shape: ", self.videosTable.shape)
+        if (self.removeFile != 'NAN'):
+            self.removeDataFrame = pd.read_csv(self.removeFile, sep=';')
+            self.logger.print("Remove: ", self.removeDataFrame)
 
     def getIndexByStatus(self, status):
         singleton = VideoProcessorSingleton(self.videosTable["status"])
@@ -122,13 +127,15 @@ class filterProcess:
 if __name__ == '__main__':
 
     todayformated = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    print(todayformated)
+
     outputFilterdList = f'ListsInfo/videofrevodataset2{todayformated}.csv'
+    removeList = 'ListsInfo/frevoRemoveFrames.csv'
     inputFilePath = "ListsInfo/processedFrevo.csv"
     videosFolder = "videoTest2"
 
-    filterProcess = filterProcess(
-        inputFilePath, videosFolder, True)
+    filterProcess = FilterProcess(
+        inputFilePath, videosFolder, True, removeList)
+    filterProcess.log(todayformated)
     filterProcess.readInput()
 
     filteredList = pd.DataFrame()
@@ -136,14 +143,14 @@ if __name__ == '__main__':
     # Assign the columns.
     filteredList[['video_id', 'hashtags']
                  ] = filterProcess.videosTable[['id', 'hashtags']]
-    print(filteredList)
+    filterProcess.log(filteredList)
     idexexStatusProcessing = filterProcess.getIndexByStatus("Processing")
     idexexStatusProcessed = filterProcess.getIndexByStatus("Processed")
     if (len(idexexStatusProcessing) > 0):
-        print("PROCESSING THE INDEX VIDEO: ",
-              idexexStatusProcessing.tolist()[0])
+        filterProcess.log("PROCESSING THE INDEX VIDEO: ",
+                          idexexStatusProcessing.tolist()[0])
     elif (len(idexexStatusProcessed) <= 0):
-        print("ALL VIDEOS PROCESSED!")
+        filterProcess.log("ALL VIDEOS PROCESSED!")
     else:
         metrics = {}
         metrics["EPDNVP"] = Histogram(id, MetricTipe.EPDNVP)
@@ -172,7 +179,7 @@ if __name__ == '__main__':
             filterProcess.log("Selected Video: ", selectedVideo)
 
             folder = file_name = id = selectedVideo['id']
-            print(indexProcessed, "Filter: ", id)
+            filterProcess.log(indexProcessed, "Filter: ", id)
             outputFile = open(filterProcess.outPutFolder + "/" +
                               folder + "/" + file_name+".txt", "r")
             text = outputFile.read().replace('\n', '')
@@ -180,16 +187,22 @@ if __name__ == '__main__':
             framesDictionary = json.loads(text)
             finalDictionary = json.loads(text)
 
-            thresoldFile = pd.read_csv(filterProcess.outPutFolder + "/" +
-                                       str(folder) + "/" + str(file_name)+"-" +
-                                       str(selectedMetric.histogramTipe)+"-Threshold" +
-                                       str(selectedMetric.threshold)+".csv",
-                                       usecols=["Frame", "Value"], sep="\t")
-
+            thresholdFile = pd.read_csv(filterProcess.outPutFolder + "/" +
+                                        str(folder) + "/" + str(file_name)+"-" +
+                                        str(selectedMetric.histogramTipe)+"-Threshold" +
+                                        str(selectedMetric.threshold)+".csv",
+                                        usecols=["Frame", "Value"], sep="\t")
+            listRemoveFrames = [row['frame'] for index,
+                                row in filterProcess.removeDataFrame.iterrows() if row['video_id'] == id]
+            filterProcess.log("Remover: ", len(listRemoveFrames))
+            # Create a dict with dict Comprehension
+            # The value of the new dict is a frame
+            # from the threshold file is then is not
+            # in remove list
             framesFiltered = {
-                key: framesDictionary[id]["frames"][str(key)] for key in thresoldFile["Frame"]}
+                key: framesDictionary[id]["frames"][str(key)] for key in thresholdFile["Frame"] if key not in listRemoveFrames}
             finalDictionary[id]["frames"] = framesFiltered
-            quantFiltered = len(thresoldFile["Frame"])
+            quantFiltered = len(thresholdFile["Frame"])
             outputFilePath = filterProcess.outPutFolder + "/" + id + "/" + id+"Filtered.txt"
             othesColumns["metric"].append(selectedMetric.histogramTipe.name)
             othesColumns["threshold"].append(selectedMetric.threshold)
@@ -201,12 +214,12 @@ if __name__ == '__main__':
             file = open(outputFilePath, "w")
             file.write(json.dumps(finalDictionary, indent=4, cls=NpEncoder))
             file.close()
-            print('Filtered:', quantFiltered)
+            filterProcess.log('Filtered:', quantFiltered)
         othesColumns = pd.DataFrame(othesColumns)
         assert len(filteredList) == len(othesColumns)
-        print("OTHER: ", othesColumns)
+        filterProcess.log("OTHER: ", othesColumns)
         filteredList = pd.concat(
             [filteredList, othesColumns], axis=1)
-        print("CONCAT: ", filteredList)
+        filterProcess.log("CONCAT: ", filteredList)
         filteredList.to_csv(outputFilterdList, sep=';')
-        print(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
+        filterProcess.log(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
